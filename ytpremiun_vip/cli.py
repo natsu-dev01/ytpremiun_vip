@@ -10,6 +10,7 @@ from pathlib import Path
 from . import __version__
 from .downloader import Downloader, Options, Result
 from .errors import YtPremiunVipError
+from .http import DEFAULT_CONNECTIONS
 from .utils import dedupe, read_batch_file
 
 
@@ -151,6 +152,14 @@ def build_parser() -> argparse.ArgumentParser:
         help="Reintentos por descarga (por defecto: 5)",
     )
     parser.add_argument(
+        "--connections", "--conexiones", dest="connections", type=int,
+        default=DEFAULT_CONNECTIONS,
+        help=(
+            "Conexiones en paralelo para cada descarga (por defecto: "
+            f"{DEFAULT_CONNECTIONS}). Usa 1 para el modo secuencial"
+        ),
+    )
+    parser.add_argument(
         "--timeout", type=float, default=20.0,
         help="Timeout de red en segundos (por defecto: 20)",
     )
@@ -268,6 +277,7 @@ def main(argv: list[str] | None = None) -> int:
         verbose=args.verbose,
         retries=args.retries,
         timeout=args.timeout,
+        connections=args.connections,
         proxy=args.proxy,
         cookies=Path(args.cookies) if args.cookies else None,
         list_formats=args.list_formats,

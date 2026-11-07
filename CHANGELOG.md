@@ -5,6 +5,32 @@ Todos los cambios importantes de **ytpremiun-vip** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y
 el versionado sigue [SemVer](https://semver.org/lang/es/).
 
+## [0.2.0] - 2026-11-07
+
+### Añadido
+
+- Descarga paralela por rangos con `--connections` (6 conexiones por defecto).
+  Se puede volver al modo secuencial con `--connections 1`.
+- Reanudación por bloques con un archivo `.part.state`, incluso si se
+  interrumpe la descarga con Ctrl+C.
+- Parámetros `conexiones` en la API de Python y `conexiones`/`connections` en
+  el wrapper de Node.js.
+- Pruebas de descarga paralela, reanudación y vuelta al modo secuencial.
+
+### Cambiado
+
+- El cliente HTTP usa una sesión independiente por hilo para evitar compartir
+  `requests.Session` entre conexiones.
+- Si el servidor ignora la cabecera `Range` y devuelve todo el archivo, la
+  descarga vuelve automáticamente al modo secuencial.
+
+### Rendimiento
+
+- Pruebas reales en Windows con 6 conexiones (1 y 2 horas):
+  - audio M4A de 1 h (55,6 MiB): de 15,2 s a 5,5 s.
+  - audio M4A de 2 h (113,6 MiB): de 33,6 s a 9,2 s.
+  - video 144p de 2 h (36,5 MiB): de 13,5 s a 4,7 s.
+
 ## [0.1.0] - 2026-11-07
 
 ### Añadido

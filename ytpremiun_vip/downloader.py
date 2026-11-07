@@ -12,7 +12,7 @@ from pathlib import Path
 
 from .errors import ExtractionError, YtPremiunVipError
 from .formats import Selection, format_table, select_format
-from .http import DEFAULT_USER_AGENT, HttpClient
+from .http import DEFAULT_CONNECTIONS, DEFAULT_USER_AGENT, HttpClient
 from .innertube import Format, InnertubeClient, VideoInfo
 from .media import extract_audio, find_ffmpeg, merge, remux
 from .playlist import PlaylistClient
@@ -52,6 +52,7 @@ class Options:
     verbose: bool = False
     retries: int = 5
     timeout: float = 20.0
+    connections: int = DEFAULT_CONNECTIONS
     proxy: str | None = None
     cookies: Path | None = None
     list_formats: bool = False
@@ -472,6 +473,7 @@ class Downloader:
                     "User-Agent": DEFAULT_USER_AGENT,
                     "Referer": "https://www.youtube.com/",
                 },
+                connections=self.options.connections,
             )
         finally:
             printer.finish()

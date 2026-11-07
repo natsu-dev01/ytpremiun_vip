@@ -96,6 +96,7 @@ class FakeHttp:
         expected_size=None,
         progress=None,
         headers=None,
+        connections=None,
     ):
         path = Path(destination)
         path.parent.mkdir(parents=True, exist_ok=True)

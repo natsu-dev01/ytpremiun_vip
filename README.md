@@ -179,6 +179,43 @@ ytpremiun-vip -x --json "https://youtu.be/jNQXAC9IVRw"
 
 ---
 
+## Velocidad de descarga
+
+Por defecto cada archivo se descarga con **6 conexiones en paralelo** y
+bloques de 2 MiB. Esto acelera bastante los videos largos porque YouTube
+limita la velocidad de una sola conexión. Si tu red o un proxy no admiten
+varias conexiones, usa el modo secuencial:
+
+```bash
+# Más conexiones (más rápido si tu red lo permite)
+ytpremiun-vip --connections 8 "https://youtu.be/VIDEO"
+
+# Modo secuencial clásico
+ytpremiun-vip --connections 1 "https://youtu.be/VIDEO"
+
+# En la API de Python
+from ytpremiun_vip import Opciones, descargar_audio
+descargar_audio("https://youtu.be/VIDEO", opciones=Opciones(conexiones=8))
+```
+
+La descarga se guarda en un archivo `.part` y un `.part.state`. Si se corta
+la conexión o pulsas `Ctrl+C`, vuelve a ejecutar el mismo comando: se reanudan
+solo los bloques que faltan. Si el servidor no admite rangos, la librería
+vuelve automáticamente al modo secuencial.
+
+Resultados medidos en Windows con 6 conexiones:
+
+| Prueba | Antes (1 conexión) | Ahora (6 conexiones) |
+| --- | --- | --- |
+| Audio M4A 1 h (55,6 MiB) | 15,2 s | **5,5 s** |
+| Audio M4A 2 h (113,6 MiB) | 33,6 s | **9,2 s** |
+| Video 144p 2 h (36,5 MiB) | 13,5 s | **4,7 s** |
+
+> La velocidad depende de tu ISP, del nodo de YouTube y de la hora. Los
+> tiempos de MP3/MP4 finales incluyen además la conversión o unión con ffmpeg.
+
+---
+
 ## Uso como librería (bots)
 
 El paquete se importa como `ytpremiun_vip` y está pensado para que un bot
@@ -255,8 +292,8 @@ for resultado in resultados:
 | `listar_formatos(url, ...)` | `str` | Tabla de formatos disponibles como texto. |
 
 Los parámetros más usados son `carpeta`, `formato_audio`, `calidad_audio`,
-`formato` (selector), `contenedor`, `subtitulos`, `cookies`, `proxy`,
-`silencioso`, `opciones`.
+`formato` (selector), `contenedor`, `conexiones`, `subtitulos`, `cookies`,
+`proxy`, `silencioso`, `opciones`.
 
 ### Resultado de una descarga
 
@@ -332,9 +369,10 @@ resultado = await asyncio.to_thread(
 
 Las opciones del wrapper usan nombres en español: `carpeta`, `formato`,
 `formatoAudio`, `calidadAudio`, `contenedor`, `playlist`,
-`elementosPlaylist`, `subtitulos`, `cookies`, `proxy`, `timeout`, `reintentos`,
-entre otras. Cada resultado tiene `ok`, `estado`, `titulo`, `autor`,
-`duracion`, `archivo`, `archivos` y `error`, igual que la API de Python.
+`elementosPlaylist`, `subtitulos`, `cookies`, `proxy`, `conexiones`,
+`timeout`, `reintentos`, entre otras. Cada resultado tiene `ok`, `estado`,
+`titulo`, `autor`, `duracion`, `archivo`, `archivos` y `error`, igual que la
+API de Python.
 
 ---
 
@@ -367,6 +405,7 @@ entre otras. Cada resultado tiene `ok`, `estado`, `titulo`, `autor`,
 | `-q, --quiet` | Modo silencioso. |
 | `-v, --verbose` | Muestra trazas detalladas de errores. |
 | `--retries N` | Reintentos por descarga. Por defecto `5`. |
+| `--connections N` | Conexiones en paralelo por descarga. Por defecto `6`; usa `1` para el modo secuencial. |
 | `--timeout SEGUNDOS` | Timeout de red. Por defecto `20`. |
 | `--proxy URL` | Proxy HTTP/SOCKS. |
 | `--cookies ARCHIVO` | Cookies en formato Netscape (exportadas del navegador). |

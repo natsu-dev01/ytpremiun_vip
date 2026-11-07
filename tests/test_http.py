@@ -5,7 +5,7 @@ from __future__ import annotations
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 import requests
 
@@ -257,6 +257,117 @@ class StreamDownloadTests(unittest.TestCase):
                 self.client.stream_download(
                     "https://x", Path(tmp) / "a.bin", expected_size=10
                 )
+
+
+class RangeSession:
+    """Sesión falsa que responde a cualquier cabecera Range."""
+
+    def __init__(self, data: bytes, *, support_ranges: bool = True):
+        self.data = data
+        self.support_ranges = support_ranges
+        self.ranges: list[tuple[int, int]] = []
+
+    def get(self, url, *, headers, stream, timeout):
+        header = headers.get("Range", "")
+        start_text, end_text = header.removeprefix("bytes=").split("-", 1)
+        start, end = int(start_text), int(end_text)
+        self.ranges.append((start, end))
+        if not self.support_ranges:
+            return FakeStreamResponse(
+                status=200,
+                chunks=(self.data,),
+                headers={"Content-Length": str(len(self.data))},
+            )
+        return FakeStreamResponse(
+            status=206,
+            chunks=(self.data[start : end + 1],),
+            headers={"Content-Range": f"bytes {start}-{end}/{len(self.data)}"},
+        )
+
+
+class ParallelDownloadTests(unittest.TestCase):
+    def setUp(self):
+        self.client = HttpClient(retries=0, timeout=5)
+        patcher = patch("ytpremiun_vip.http.PARALLEL_RANGE_SIZE", 4)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def test_parallel_assembles_file(self):
+        data = b"abcdefghij"
+        session = RangeSession(data)
+        self.client._thread_session = lambda: session
+        self.client._probe_ranges = lambda url, headers: (len(data), True)
+        with tempfile.TemporaryDirectory() as tmp:
+            dest = Path(tmp) / "archivo.bin"
+            calls = []
+            size = self.client.stream_download(
+                "https://x",
+                dest,
+                connections=3,
+                progress=lambda done, total: calls.append((done, total)),
+            )
+            self.assertEqual(size, 10)
+            self.assertEqual(dest.read_bytes(), data)
+            self.assertFalse(dest.with_name(dest.name + ".part").exists())
+            self.assertFalse(
+                dest.with_name(dest.name + ".part.state").exists()
+            )
+            self.assertEqual(calls[-1], (10, 10))
+            self.assertEqual(sorted(session.ranges), [(0, 3), (4, 7), (8, 9)])
+
+    def test_parallel_resumes_completed_chunks(self):
+        data = b"abcdefghij"
+        session = RangeSession(data)
+        self.client._thread_session = lambda: session
+        self.client._probe_ranges = lambda url, headers: (len(data), True)
+        with tempfile.TemporaryDirectory() as tmp:
+            dest = Path(tmp) / "archivo.bin"
+            part = dest.with_name(dest.name + ".part")
+            part.write_bytes(data[:4])
+            part.with_name(part.name + ".state").write_text(
+                '{"total": 10, "chunk_size": 4, "completed": [0]}',
+                encoding="utf-8",
+            )
+            size = self.client.stream_download(
+                "https://x", dest, connections=3
+            )
+            self.assertEqual(size, 10)
+            self.assertEqual(dest.read_bytes(), data)
+            self.assertEqual(sorted(session.ranges), [(4, 7), (8, 9)])
+
+    def test_parallel_falls_back_when_ranges_are_ignored(self):
+        data = b"abcdefghij"
+        session = RangeSession(data, support_ranges=False)
+        self.client._thread_session = lambda: session
+        self.client._probe_ranges = lambda url, headers: (len(data), True)
+        self.client.session.get = Mock(
+            return_value=FakeStreamResponse(
+                status=200,
+                chunks=(data,),
+                headers={"Content-Length": str(len(data))},
+            )
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            dest = Path(tmp) / "archivo.bin"
+            size = self.client.stream_download("https://x", dest, connections=4)
+            self.assertEqual(size, 10)
+            self.assertEqual(dest.read_bytes(), data)
+
+    def test_parallel_skipped_when_total_is_unknown(self):
+        data = b"abcdefghij"
+        self.client._probe_ranges = lambda url, headers: (None, True)
+        self.client.session.get = Mock(
+            return_value=FakeStreamResponse(
+                status=206,
+                chunks=(data,),
+                headers={"Content-Range": f"bytes 0-9/{len(data)}"},
+            )
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            dest = Path(tmp) / "archivo.bin"
+            size = self.client.stream_download("https://x", dest, connections=3)
+            self.assertEqual(size, 10)
+            self.assertEqual(dest.read_bytes(), data)
 
 
 if __name__ == "__main__":

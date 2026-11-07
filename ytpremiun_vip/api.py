@@ -23,7 +23,7 @@ from typing import Any, Iterable
 from .downloader import Downloader, Options, Result
 from .errors import ExtractionError, YtPremiunVipError
 from .formats import format_table
-from .http import HttpClient
+from .http import DEFAULT_CONNECTIONS, HttpClient
 from .innertube import InnertubeClient, VideoInfo
 from .urls import parse_input, video_url
 
@@ -59,6 +59,7 @@ class Opciones:
     progreso: bool = False
     reintentos: int = 5
     timeout: float = 20.0
+    conexiones: int = DEFAULT_CONNECTIONS
     proxy: str | None = None
     cookies: str | Path | None = None
 
@@ -88,6 +89,7 @@ class Opciones:
             verbose=False,
             retries=self.reintentos,
             timeout=self.timeout,
+            connections=self.conexiones,
             proxy=self.proxy,
             cookies=Path(self.cookies) if self.cookies else None,
         )
@@ -218,6 +220,7 @@ def descargar(
     elementos_playlist: str | None = None,
     cookies: str | Path | None = None,
     proxy: str | None = None,
+    conexiones: int | None = None,
     silencioso: bool | None = None,
 ) -> list[Descarga]:
     """Descarga una o varias URLs y devuelve un resultado por cada video.
@@ -239,6 +242,7 @@ def descargar(
         elementos_playlist=elementos_playlist,
         cookies=cookies,
         proxy=proxy,
+        conexiones=conexiones,
         silencioso=silencioso,
     )
     return _ejecutar(urls, ajustadas)
@@ -254,6 +258,7 @@ def descargar_video(
     playlist: bool | None = None,
     cookies: str | Path | None = None,
     proxy: str | None = None,
+    conexiones: int | None = None,
     silencioso: bool | None = None,
 ) -> Descarga:
     """Descarga un solo video (ignora ``list=`` salvo que pidas la playlist)."""
@@ -266,6 +271,7 @@ def descargar_video(
         playlist=False if playlist is None else playlist,
         cookies=cookies,
         proxy=proxy,
+        conexiones=conexiones,
         silencioso=silencioso,
     )
     return _una(url, ajustadas)
@@ -281,6 +287,7 @@ def descargar_audio(
     playlist: bool | None = None,
     cookies: str | Path | None = None,
     proxy: str | None = None,
+    conexiones: int | None = None,
     silencioso: bool | None = None,
 ) -> Descarga:
     """Descarga un video como audio (MP3 por defecto)."""
@@ -293,6 +300,7 @@ def descargar_audio(
         playlist=False if playlist is None else playlist,
         cookies=cookies,
         proxy=proxy,
+        conexiones=conexiones,
         silencioso=silencioso,
     )
     return _una(url, ajustadas)
@@ -310,6 +318,7 @@ def descargar_playlist(
     max_descargas: int | None = None,
     cookies: str | Path | None = None,
     proxy: str | None = None,
+    conexiones: int | None = None,
     silencioso: bool | None = None,
 ) -> list[Descarga]:
     """Descarga una playlist completa (o los elementos indicados)."""
@@ -324,6 +333,7 @@ def descargar_playlist(
         max_descargas=max_descargas,
         cookies=cookies,
         proxy=proxy,
+        conexiones=conexiones,
         silencioso=silencioso,
     )
     return _ejecutar(url, ajustadas)

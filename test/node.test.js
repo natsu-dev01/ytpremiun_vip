@@ -53,6 +53,13 @@ test("mapea cookies, subtítulos e historial", () => {
   assert.equal(args[args.indexOf("--timeout") + 1], "10");
 });
 
+test("mapea conexiones en paralelo", () => {
+  const args = _buildArgs(URL, { conexiones: 8 }, "audio");
+  assert.equal(args[args.indexOf("--connections") + 1], "8");
+  const alias = _buildArgs(URL, { connections: 3 }, "video");
+  assert.equal(alias[alias.indexOf("--connections") + 1], "3");
+});
+
 test("acepta varias URLs", () => {
   const args = _buildArgs([URL, "https://youtu.be/dQw4w9WgXcQ"], {}, "generic");
   assert.deepEqual(args.slice(-2), [URL, "https://youtu.be/dQw4w9WgXcQ"]);

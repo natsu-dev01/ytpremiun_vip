@@ -242,6 +242,10 @@ function _buildArgs(urls, opciones = {}, modo = "generic") {
   if (opciones.reintentos != null) {
     args.push("--retries", String(opciones.reintentos));
   }
+  const conexiones = opciones.conexiones ?? opciones.connections;
+  if (conexiones != null) {
+    args.push("--connections", String(conexiones));
+  }
   if (opciones.timeout != null) {
     args.push("--timeout", String(opciones.timeout));
   }

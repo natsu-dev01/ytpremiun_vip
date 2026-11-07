@@ -1,6 +1,6 @@
 {
   "name": "ytpremiun-vip",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Wrapper de Node.js para ytpremiun-vip: descarga YouTube (video, audio y playlists) desde bots como Baileys o whatsapp-web.js. Requiere Python.",
   "main": "index.js",
   "types": "index.d.ts",

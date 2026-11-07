@@ -41,6 +41,10 @@ export interface Opciones {
   conservarTemporales?: boolean;
   /** Reintentos por descarga. */
   reintentos?: number;
+  /** Conexiones en paralelo por descarga (por defecto 6; 1 = secuencial). */
+  conexiones?: number;
+  /** Alias de `conexiones`. */
+  connections?: number;
   /** Timeout de red en segundos. */
   timeout?: number;
   /** Proxy HTTP/SOCKS. */

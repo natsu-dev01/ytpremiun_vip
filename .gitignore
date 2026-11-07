@@ -11,7 +11,9 @@ venv/
 downloads/
 media/
 *.part
+*.part.state
 .ytpremiun-vip-tmp/
+bench_tmp/
 
 # Node.js
 node_modules/
