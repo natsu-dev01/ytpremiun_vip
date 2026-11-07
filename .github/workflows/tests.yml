@@ -34,5 +34,24 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e .
 
+      - name: Instalar ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+
       - name: Ejecutar los tests
         run: python -m unittest discover -s tests -v
+
+  node:
+    name: Node.js
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar el repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Ejecutar los tests del wrapper
+        run: npm test

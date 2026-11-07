@@ -47,6 +47,13 @@ class MetadataTests(unittest.TestCase):
 
 
 class CommandTests(unittest.TestCase):
+    def setUp(self):
+        # Los comandos se inspeccionan sin ejecutar ffmpeg, así que no hace
+        # falta que esté instalado para estos tests.
+        patcher = patch("ytpremiun_vip.media.find_ffmpeg", return_value="ffmpeg")
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
     def _capture(self, func, *args, **kwargs):
         with patch("ytpremiun_vip.media._run") as run:
             func(*args, **kwargs)
