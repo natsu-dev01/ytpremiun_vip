@@ -291,9 +291,9 @@ resultado = await asyncio.to_thread(
 )
 ```
 
-> **Bots en Node.js / `whatsapp-web.js`:** el paquete incluye un wrapper
-> oficial que se instala con npm y ejecuta Python por dentro. No necesitas
-> `child_process` ni analizar la salida de la terminal:
+> **Bots en Node.js (Baileys, `whatsapp-web.js` u otros):** el paquete
+> incluye un wrapper oficial que se instala con npm y ejecuta Python por
+> dentro. No necesitas `child_process` ni analizar la salida de la terminal:
 >
 > ```js
 > const { descargarAudio, descargarVideo } = require("ytpremiun-vip");
@@ -312,8 +312,11 @@ resultado = await asyncio.to_thread(
 > console.log(video.archivo);
 > ```
 >
-> Tienes un ejemplo completo y listo para adaptar en
-> [`examples/bot_whatsapp.js`](examples/bot_whatsapp.js).
+> El wrapper solo descarga y devuelve la ruta; el envío por WhatsApp depende
+> de tu librería. Tienes ejemplos completos para:
+>
+> - [Baileys](examples/bot_baileys.js) (`@whiskeysockets/baileys`).
+> - [`whatsapp-web.js`](examples/bot_whatsapp.js).
 
 ### Funciones del wrapper Node.js
 
@@ -516,7 +519,7 @@ ytpremiun-vip --write-subs --write-auto-subs --sub-langs all --sub-format vtt UR
 ├── requirements.txt   Dependencias de Python
 ├── LICENSE            Licencia MIT
 ├── README.md          Documentación
-├── examples/          Ejemplos (bot de WhatsApp)
+├── examples/          Ejemplos (Baileys, whatsapp-web.js)
 ├── test/              Tests del wrapper de Node.js
 ├── tests/             Tests de Python
 └── ytpremiun_vip/

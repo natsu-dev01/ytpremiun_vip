@@ -22,9 +22,10 @@ el versionado sigue [SemVer](https://semver.org/lang/es/).
   `descargar_audio`, `descargar_playlist`, `obtener_info` y
   `listar_formatos`.
 - Wrapper oficial de Node.js instalable con npm (`index.js`, `index.d.ts` y
-  `package.json`) para bots de `whatsapp-web.js`.
+  `package.json`) para bots de Baileys y `whatsapp-web.js`.
 - Modo `--json` con rutas, estado y errores para integraciones en Node.js.
 - Ejemplo de bot para `whatsapp-web.js` en `examples/bot_whatsapp.js`.
+- Ejemplo de bot para Baileys en `examples/bot_baileys.js`.
 - Documentación en español, tests unitarios y CI con GitHub Actions.
 
 ### Corregido
