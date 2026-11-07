@@ -1,0 +1,41 @@
+{
+  "name": "ytpremiun-vip",
+  "version": "0.1.0",
+  "description": "Wrapper de Node.js para ytpremiun-vip: descarga YouTube (video, audio y playlists) desde bots. Requiere Python.",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "files": [
+    "index.js",
+    "index.d.ts",
+    "assets/ytpremiun-vip.jpeg",
+    "pyproject.toml",
+    "requirements.txt",
+    "ytpremiun_vip"
+  ],
+  "scripts": {
+    "test": "node --test test/node.test.js"
+  },
+  "keywords": [
+    "youtube",
+    "downloader",
+    "whatsapp",
+    "whatsapp-web.js",
+    "bot",
+    "audio",
+    "video",
+    "playlist"
+  ],
+  "author": "natsu-dev01",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/natsu-dev01/ytpremiun_vip.git"
+  },
+  "bugs": {
+    "url": "https://github.com/natsu-dev01/ytpremiun_vip/issues"
+  },
+  "homepage": "https://github.com/natsu-dev01/ytpremiun_vip#readme",
+  "engines": {
+    "node": ">=18"
+  }
+}

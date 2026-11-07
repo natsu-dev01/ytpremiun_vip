@@ -21,6 +21,8 @@ el versionado sigue [SemVer](https://semver.org/lang/es/).
 - API de librería para bots: `descargar`, `descargar_video`,
   `descargar_audio`, `descargar_playlist`, `obtener_info` y
   `listar_formatos`.
+- Wrapper oficial de Node.js instalable con npm (`index.js`, `index.d.ts` y
+  `package.json`) para bots de `whatsapp-web.js`.
 - Modo `--json` con rutas, estado y errores para integraciones en Node.js.
 - Ejemplo de bot para `whatsapp-web.js` en `examples/bot_whatsapp.js`.
 - Documentación en español, tests unitarios y CI con GitHub Actions.

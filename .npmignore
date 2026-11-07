@@ -1,0 +1,14 @@
+# El paquete npm solo necesita el wrapper y el código Python.
+__pycache__/
+*.py[cod]
+*.egg-info/
+.git/
+.github/
+.vscode/
+.idea/
+tests/
+test/
+examples/
+build/
+dist/
+*.log

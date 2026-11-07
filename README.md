@@ -24,6 +24,8 @@ Permite:
   de historial.
 - Integrarse como **librería** en bots y otros programas (`descargar_audio`,
   `descargar_video`, `descargar_playlist`).
+- Usarse desde **Node.js** con el wrapper npm incluido (`npm install
+  https://github.com/natsu-dev01/ytpremiun_vip`).
 
 > ⚠️ **Aviso legal:** descarga únicamente contenido propio, de dominio público
 > o para el que tengas permiso. Respeta los Términos de Servicio de YouTube y
@@ -82,6 +84,47 @@ Si prefieres no instalarlo, también funciona como módulo:
 pip install -r requirements.txt
 python -m ytpremiun_vip --help
 ```
+
+### Instalación en un bot de Node.js (npm)
+
+El repositorio también incluye un wrapper oficial para Node.js. Instálalo
+desde GitHub en la carpeta de tu bot:
+
+```bash
+npm install https://github.com/natsu-dev01/ytpremiun_vip
+```
+
+También puedes usar la forma `github:`:
+
+```bash
+npm install github:natsu-dev01/ytpremiun_vip
+```
+
+El wrapper lleva el código Python dentro del paquete npm y lo ejecuta con
+`python -m ytpremiun_vip`, así que **npm por sí solo no basta**. Necesitas:
+
+- Python 3.10 o superior en el `PATH` (o define `YTPREMIUN_PYTHON`).
+- El paquete `requests`: `python -m pip install requests`.
+- `ffmpeg` para MP3 y para unir video+audio.
+
+Comprueba que todo está listo desde tu bot:
+
+```js
+const { verificar } = require("ytpremiun-vip");
+
+verificar().then(console.log);
+```
+
+Si Python no está en el `PATH`, indícalo con una variable de entorno:
+
+```bash
+set YTPREMIUN_PYTHON=C:\Python312\python.exe        # Windows cmd
+$env:YTPREMIUN_PYTHON="C:\Python312\python.exe"    # PowerShell
+export YTPREMIUN_PYTHON=/usr/bin/python3           # Linux/macOS
+```
+
+> `npm install` instala el envoltorio de JavaScript. Python, `requests` y
+> ffmpeg se instalan aparte.
 
 ---
 
@@ -248,32 +291,47 @@ resultado = await asyncio.to_thread(
 )
 ```
 
-> **Nota para bots en Node.js:** esta es una librería de Python, así que no se
-> puede importar con `require()` desde Node. La forma más sencilla de usarla
-> desde `whatsapp-web.js` es invocar el comando con `child_process` y `--json`:
+> **Bots en Node.js / `whatsapp-web.js`:** el paquete incluye un wrapper
+> oficial que se instala con npm y ejecuta Python por dentro. No necesitas
+> `child_process` ni analizar la salida de la terminal:
 >
 > ```js
-> const { execFile } = require("node:child_process");
+> const { descargarAudio, descargarVideo } = require("ytpremiun-vip");
 >
-> execFile(
->   "python",
->   [
->     "-m", "ytpremiun_vip", "--json",
->     "-x", "--audio-format", "mp3",
->     "-P", "media", url,
->   ],
->   { maxBuffer: 32 * 1024 * 1024 },
->   (error, stdout) => {
->     if (error) return console.error(error);
->     const [resultado] = JSON.parse(stdout);
->     console.log(resultado.archivo); // ruta final del archivo
->   },
-> );
+> const audio = await descargarAudio("https://youtu.be/jNQXAC9IVRw", {
+>   carpeta: "media",
+>   formatoAudio: "mp3",
+>   calidadAudio: "192K",
+> });
+> console.log(audio.archivo); // ruta final del archivo
+>
+> const video = await descargarVideo("https://youtu.be/jNQXAC9IVRw", {
+>   carpeta: "media",
+>   contenedor: "mp4",
+> });
+> console.log(video.archivo);
 > ```
 >
 > Tienes un ejemplo completo y listo para adaptar en
-> [`examples/bot_whatsapp.js`](examples/bot_whatsapp.js). También se puede
-> añadir un pequeño servidor HTTP local si prefieres no usar `child_process`.
+> [`examples/bot_whatsapp.js`](examples/bot_whatsapp.js).
+
+### Funciones del wrapper Node.js
+
+| Función | Devuelve | Descripción |
+| --- | --- | --- |
+| `descargar(urls, opciones)` | `Promise<Resultado[]>` | Una o varias URLs. No lanza excepción si falla un elemento. |
+| `descargarAudio(url, opciones)` | `Promise<Resultado>` | Audio (MP3 por defecto). Lanza `YtPremiunError` si falla. |
+| `descargarVideo(url, opciones)` | `Promise<Resultado>` | Video con audio. Lanza `YtPremiunError` si falla. |
+| `descargarPlaylist(url, opciones)` | `Promise<Resultado[]>` | Playlist completa o los elementos indicados. |
+| `obtenerInfo(url, opciones)` | `Promise<InfoVideo>` | Metadatos del video sin descargar. |
+| `listarFormatos(url, opciones)` | `Promise<string>` | Tabla de formatos disponibles. |
+| `verificar()` | `Promise<Verificacion>` | Comprueba Python, `requests`, el paquete y ffmpeg. |
+
+Las opciones del wrapper usan nombres en español: `carpeta`, `formato`,
+`formatoAudio`, `calidadAudio`, `contenedor`, `playlist`,
+`elementosPlaylist`, `subtitulos`, `cookies`, `proxy`, `timeout`, `reintentos`,
+entre otras. Cada resultado tiene `ok`, `estado`, `titulo`, `autor`,
+`duracion`, `archivo`, `archivos` y `error`, igual que la API de Python.
 
 ---
 
@@ -450,29 +508,42 @@ ytpremiun-vip --write-subs --write-auto-subs --sub-langs all --sub-format vtt UR
 ### Estructura del proyecto
 
 ```text
-ytpremiun_vip/
-├── __init__.py      Versión y API pública
-├── __main__.py      Punto de entrada (python -m ytpremiun_vip)
-├── api.py           API de librería para bots (descargar_audio, etc.)
-├── cli.py           Argumentos, opciones y resumen final
-├── downloader.py    Cola, orquestación, archivo de historial
-├── errors.py        Excepciones propias
-├── formats.py       Selector de formatos y tabla -F
-├── http.py          Reintentos, cookies, descargas reanudables
-├── innertube.py     Cliente VISIONOS (+ respaldos) y parseo de respuestas
-├── media.py         Integración con ffmpeg
-├── playlist.py      Lectura y paginación de playlists
-├── progress.py      Barra de progreso
-├── subtitles.py     Parseo y conversión de subtítulos
-├── urls.py          Parseo de URLs de YouTube
-└── utils.py         Plantillas, saneado y utilidades
+.
+├── index.js           Wrapper de Node.js (npm)
+├── index.d.ts         Tipos TypeScript del wrapper
+├── package.json       Metadatos del paquete npm
+├── pyproject.toml     Metadatos del paquete pip
+├── requirements.txt   Dependencias de Python
+├── LICENSE            Licencia MIT
+├── README.md          Documentación
+├── examples/          Ejemplos (bot de WhatsApp)
+├── test/              Tests del wrapper de Node.js
+├── tests/             Tests de Python
+└── ytpremiun_vip/
+    ├── __init__.py      Versión y API pública
+    ├── __main__.py      Punto de entrada (python -m ytpremiun_vip)
+    ├── api.py           API de librería para bots (descargar_audio, etc.)
+    ├── cli.py           Argumentos, opciones y resumen final
+    ├── downloader.py    Cola, orquestación, archivo de historial
+    ├── errors.py        Excepciones propias
+    ├── formats.py       Selector de formatos y tabla -F
+    ├── http.py          Reintentos, cookies, descargas reanudables
+    ├── innertube.py     Cliente VISIONOS (+ respaldos) y parseo de respuestas
+    ├── media.py         Integración con ffmpeg
+    ├── playlist.py      Lectura y paginación de playlists
+    ├── progress.py      Barra de progreso
+    ├── subtitles.py     Parseo y conversión de subtítulos
+    ├── urls.py          Parseo de URLs de YouTube
+    └── utils.py         Plantillas, saneado y utilidades
 ```
 
 ---
 
 ## Tests
 
-El proyecto incluye tests unitarios que no necesitan red:
+El proyecto incluye tests unitarios que no necesitan red.
+
+Python:
 
 ```bash
 python -m unittest discover -s tests -v
@@ -482,6 +553,12 @@ Cubren parseo de URLs, plantillas, selección de formatos, playlists,
 subtítulos, cliente HTTP, comandos de ffmpeg, flujo de descarga, API de
 librería y CLI. Hay un test de integración con ffmpeg que se omite
 automáticamente si no está instalado.
+
+Wrapper de Node.js:
+
+```bash
+npm test
+```
 
 ---
 

@@ -3,90 +3,82 @@
  *
  * Requisitos:
  *   npm install whatsapp-web.js qrcode-terminal
- *   python -m pip install -e .
- *   ffmpeg instalado y en el PATH
+ *   npm install https://github.com/natsu-dev01/ytpremiun_vip
+ *   Python 3.10+ con `requests` y ffmpeg instalado y en el PATH
  *
  * Uso en WhatsApp:
  *   !mp3 https://youtu.be/VIDEO
  *   !mp4 https://youtu.be/VIDEO
  *
- * El comando de Python se ejecuta con --json para recibir la ruta final del
- * archivo sin tener que analizar la salida de la terminal.
+ * El wrapper de Node.js ejecuta Python por dentro y devuelve un objeto con
+ * `archivo`, `titulo`, `autor`, etc. No hay que analizar la terminal.
  */
 
-const { execFile } = require("node:child_process");
+"use strict";
+
 const { Client, LocalAuth, MessageMedia } = require("whatsapp-web.js");
 const qrcode = require("qrcode-terminal");
+const {
+  descargarAudio,
+  descargarVideo,
+  verificar,
+} = require("ytpremiun-vip");
 
-const PYTHON = process.env.PYTHON || "python";
 const CARPETA = process.env.YTPREMIUN_CARPETA || "media";
 
-/**
- * Descarga una URL con ytpremiun-vip y devuelve el primer resultado.
- * @param {string} url
- * @param {{ audio?: boolean, formato?: string }} opciones
- */
-function descargar(url, { audio = true, formato = "mp3" } = {}) {
-  const args = ["-m", "ytpremiun_vip", "--json", "--no-playlist", "-P", CARPETA];
-  if (audio) {
-    args.push("-x", "--audio-format", formato);
+async function main() {
+  const estado = await verificar();
+  if (!estado.ok) {
+    console.error("ytpremiun-vip no está listo:", estado.error);
+    process.exit(1);
   }
-  args.push(url);
-
-  return new Promise((resolve, reject) => {
-    execFile(
-      PYTHON,
-      args,
-      {
-        windowsHide: true,
-        maxBuffer: 32 * 1024 * 1024,
-        env: { ...process.env, PYTHONIOENCODING: "utf-8" },
-      },
-      (error, stdout, stderr) => {
-        if (error) {
-          return reject(new Error(stderr.trim() || error.message));
-        }
-        try {
-          const resultados = JSON.parse(stdout);
-          const resultado = resultados[0];
-          if (!resultado || !resultado.ok) {
-            return reject(new Error(resultado?.error || "La descarga falló"));
-          }
-          resolve(resultado);
-        } catch (parseError) {
-          reject(
-            new Error(
-              `Salida no válida de Python: ${stdout || stderr}`.slice(0, 500),
-            ),
-          );
-        }
-      },
+  console.log(`Python ${estado.python} | ytpremiun-vip ${estado.version}`);
+  if (!estado.ffmpeg) {
+    console.warn(
+      "Aviso: no se encontró ffmpeg. MP3 y la unión de video+audio fallarán.",
     );
+  }
+
+  const client = new Client({ authStrategy: new LocalAuth() });
+
+  client.on("qr", (qr) => qrcode.generate(qr, { small: true }));
+  client.on("ready", () => console.log("Bot listo. Esperando comandos..."));
+
+  client.on("message", async (message) => {
+    const texto = (message.body || "").trim();
+    const [comando, url] = texto.split(/\s+/);
+    if (!["!mp3", "!mp4"].includes(comando) || !url) {
+      return;
+    }
+
+    try {
+      await message.reply("Descargando, espera un momento...");
+
+      const resultado =
+        comando === "!mp3"
+          ? await descargarAudio(url, {
+              carpeta: CARPETA,
+              formatoAudio: "mp3",
+              calidadAudio: "192K",
+            })
+          : await descargarVideo(url, {
+              carpeta: CARPETA,
+              contenedor: "mp4",
+            });
+
+      const archivo = MessageMedia.fromFilePath(resultado.archivo);
+      await message.reply(archivo, undefined, {
+        caption: `${resultado.titulo}\n${resultado.autor}`,
+      });
+    } catch (error) {
+      await message.reply(`No se pudo descargar: ${error.message}`);
+    }
   });
+
+  client.initialize();
 }
 
-const client = new Client({ authStrategy: new LocalAuth() });
-
-client.on("qr", (qr) => qrcode.generate(qr, { small: true }));
-client.on("ready", () => console.log("Bot listo. Esperando comandos..."));
-
-client.on("message", async (message) => {
-  const texto = (message.body || "").trim();
-  const [comando, url] = texto.split(/\s+/);
-  if (!["!mp3", "!mp4"].includes(comando) || !url) {
-    return;
-  }
-
-  try {
-    await message.reply("Descargando, espera un momento...");
-    const resultado = await descargar(url, { audio: comando === "!mp3" });
-    const archivo = MessageMedia.fromFilePath(resultado.archivo);
-    await message.reply(archivo, undefined, {
-      caption: `${resultado.titulo}\n${resultado.autor}`,
-    });
-  } catch (error) {
-    await message.reply(`No se pudo descargar: ${error.message}`);
-  }
+main().catch((error) => {
+  console.error(error);
+  process.exit(1);
 });
-
-client.initialize();
