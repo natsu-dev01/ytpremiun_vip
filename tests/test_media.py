@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import os
 import subprocess
+import sys
 import tempfile
+import types
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -96,6 +98,16 @@ class CommandTests(unittest.TestCase):
         self.assertEqual(command[command.index("-c:a") + 1], "copy")
         self.assertIn("-movflags", command)
 
+    def test_m4a_same_extension_copies_without_ffmpeg(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            source = Path(tmp) / "audio.m4a"
+            source.write_bytes(b"datos de audio")
+            output = Path(tmp) / "salida.m4a"
+            with patch("ytpremiun_vip.media._run") as run:
+                extract_audio(source, output, "m4a")
+            self.assertFalse(run.called)
+            self.assertEqual(output.read_bytes(), b"datos de audio")
+
     def test_flac_reencodes_webm(self):
         with tempfile.TemporaryDirectory() as tmp:
             command = self._capture(
@@ -155,6 +167,16 @@ class FindFFmpegTests(unittest.TestCase):
                 with patch("ytpremiun_vip.media.Path.exists", return_value=False):
                     with self.assertRaises(FFmpegNotFoundError):
                         find_ffmpeg()
+
+    def test_uses_bundled_imageio_ffmpeg(self):
+        fake = types.SimpleNamespace(
+            get_ffmpeg_exe=lambda: "C:/fake/ffmpeg.exe"
+        )
+        with patch.dict(os.environ, {"FFMPEG": ""}):
+            with patch("ytpremiun_vip.media.shutil.which", return_value=None):
+                with patch("ytpremiun_vip.media.Path.exists", return_value=True):
+                    with patch.dict(sys.modules, {"imageio_ffmpeg": fake}):
+                        self.assertEqual(find_ffmpeg(), "C:/fake/ffmpeg.exe")
 
     def test_available_flag(self):
         with patch("ytpremiun_vip.media.find_ffmpeg", return_value="ffmpeg"):

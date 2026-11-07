@@ -39,9 +39,15 @@ Permite:
 | --- | --- |
 | Python | 3.10 o superior |
 | `requests` | Se instala con el paquete |
-| `ffmpeg` | Necesario para unir video+audio y convertir audio |
+| `ffmpeg` | Se instala automáticamente con `imageio-ffmpeg` |
 
-### Instalar ffmpeg
+### FFmpeg
+
+El paquete incluye **imageio-ffmpeg**, que trae un binario de FFmpeg al
+instalarse con `pip`. No necesitas instalarlo ni configurar el `PATH`.
+
+Si ya tienes FFmpeg instalado, se usa ese primero (variable `FFMPEG` o `PATH`).
+También puedes instalarlo manualmente si lo prefieres:
 
 - **Windows:** descárgalo de <https://ffmpeg.org/download.html>, descomprímelo
   y añade la carpeta `bin` al `PATH`. También se detectan automáticamente
@@ -78,6 +84,8 @@ ytpremiun-vip --help
 python -m ytpremiun_vip --help
 ```
 
+`pip` instala también `imageio-ffmpeg`, que incluye el binario de FFmpeg.
+
 Si prefieres no instalarlo, también funciona como módulo:
 
 ```bash
@@ -105,7 +113,7 @@ El wrapper lleva el código Python dentro del paquete npm y lo ejecuta con
 
 - Python 3.10 o superior en el `PATH` (o define `YTPREMIUN_PYTHON`).
 - El paquete `requests`: `python -m pip install requests`.
-- `ffmpeg` para MP3 y para unir video+audio.
+- `imageio-ffmpeg`, que incluye FFmpeg: `python -m pip install imageio-ffmpeg`.
 
 Comprueba que todo está listo desde tu bot:
 
@@ -123,8 +131,9 @@ $env:YTPREMIUN_PYTHON="C:\Python312\python.exe"    # PowerShell
 export YTPREMIUN_PYTHON=/usr/bin/python3           # Linux/macOS
 ```
 
-> `npm install` instala el envoltorio de JavaScript. Python, `requests` y
-> ffmpeg se instalan aparte.
+> `npm install` instala el envoltorio de JavaScript. Python, `requests` e
+> `imageio-ffmpeg` se instalan aparte con `pip`; FFmpeg viene incluido en
+> `imageio-ffmpeg`.
 
 ---
 
@@ -218,7 +227,8 @@ Resultados medidos en Windows con 6 conexiones:
 
 En los archivos de audio, la descarga ya es rápida; el tiempo extra de MP3 lo
 consume ffmpeg al recodificar. Si no necesitas MP3, usa **M4A**: se copia el
-audio original de YouTube sin recodificar y termina en segundos.
+audio original de YouTube sin recodificar (no necesita FFmpeg) y termina en
+segundos.
 
 | Audio | MP3 192K | M4A (copia directa) |
 | --- | --- | --- |
@@ -651,15 +661,16 @@ npm test
   descarga.
 - **Subtítulos:** dependen de que el video los tenga disponibles; los
   automáticos pueden tener peor calidad.
-- **Unión de pistas:** si FFmpeg no está instalado, no se pueden unir
-  video+audio ni convertir audio (los formatos progresivos y las pistas M4A
-  directas sí funcionan).
+- **Unión de pistas:** FFmpeg se instala automáticamente con
+  `imageio-ffmpeg`. Si aun así falta, no se pueden unir video+audio ni
+  convertir audio (los formatos progresivos y las pistas M4A directas sí
+  funcionan).
 
 ## Problemas frecuentes
 
 | Problema | Solución |
 | --- | --- |
-| `ffmpeg no está instalado o no está en el PATH` | Instala ffmpeg o define la variable `FFMPEG`. |
+| `ffmpeg no está instalado o no está en el PATH` | Reinstala con `pip install -e .` (incluye `imageio-ffmpeg`) o define la variable `FFMPEG`. |
 | `HTTP 403` al descargar | La URL caducó o el cliente quedó bloqueado. Vuelve a ejecutar el comando; si persiste, actualiza los `clientVersion` de `innertube.py` o usa `--cookies cookies.txt`. |
 | `YouTube pidió iniciar sesión (o detectó un bot)` | Exporta cookies del navegador y usa `--cookies cookies.txt`. |
 | `No se encontró un formato que coincida` | Ejecuta `-F` y elige un itag válido. |

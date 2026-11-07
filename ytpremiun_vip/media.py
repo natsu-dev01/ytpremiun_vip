@@ -11,8 +11,28 @@ from typing import Any
 from .errors import FFmpegNotFoundError, MediaError
 
 
+def _bundled_ffmpeg() -> str | None:
+    """Devuelve el ffmpeg incluido por imageio-ffmpeg, si está disponible."""
+    try:
+        import imageio_ffmpeg
+    except ImportError:
+        return None
+    try:
+        candidate = imageio_ffmpeg.get_ffmpeg_exe()
+    except Exception:
+        return None
+    if candidate and Path(candidate).exists():
+        return str(candidate)
+    return None
+
+
 def find_ffmpeg() -> str:
     candidates: list[str | None] = [os.environ.get("FFMPEG"), shutil.which("ffmpeg")]
+    # imageio-ffmpeg se instala con el paquete y trae un binario incluido, así
+    # que en la mayoría de los casos no hace falta instalarlo a mano.
+    bundled = _bundled_ffmpeg()
+    if bundled:
+        candidates.append(bundled)
     if os.name == "nt":
         candidates += [
             r"C:\ffmpeg\bin\ffmpeg.exe",
@@ -23,9 +43,11 @@ def find_ffmpeg() -> str:
         if candidate and Path(candidate).exists():
             return str(candidate)
     raise FFmpegNotFoundError(
-        "ffmpeg no está instalado o no está en el PATH. "
-        "Instálalo desde https://ffmpeg.org/ y vuelve a intentarlo. "
-        "Sin ffmpeg no se pueden unir video+audio ni convertir a MP3."
+        "ffmpeg no está instalado o no se encuentra en el PATH. "
+        "Reinstala el paquete con pip (incluye imageio-ffmpeg) o define la "
+        "variable FFMPEG con la ruta al ejecutable. Sin ffmpeg no se pueden "
+        "unir video+audio ni convertir a MP3; los formatos progresivos y las "
+        "pistas M4A directas sí funcionan."
     )
 
 
@@ -157,11 +179,12 @@ def extract_audio(
         raise MediaError(f"Formato de audio no soportado: {target}")
 
     source_ext = Path(source).suffix.lstrip(".").lower()
-    copy_stream = (
-        source_ext == target
-        or (source_ext, target) in {("webm", "opus"), ("mp4", "m4a")}
-    ) and target in {"mp3", "m4a", "opus", "flac"}
+    if source_ext == target:
+        # Mismo contenedor y códec: se copia el archivo sin ejecutar ffmpeg.
+        shutil.copyfile(source, output_path)
+        return
 
+    copy_stream = (source_ext, target) in {("webm", "opus"), ("mp4", "m4a")}
     command = _base_command() + [
         "-i", str(source),
         "-vn",

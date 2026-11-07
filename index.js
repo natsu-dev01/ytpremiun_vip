@@ -7,8 +7,8 @@
  *
  * Requisitos:
  *   - Python 3.10 o superior en el PATH (o en YTPREMIUN_PYTHON).
- *   - El paquete Python `requests`.
- *   - ffmpeg para unir video+audio y convertir audio.
+ *   - Los paquetes Python `requests` e `imageio-ffmpeg` (este último incluye
+ *     FFmpeg para unir video+audio y convertir audio).
  */
 
 "use strict";

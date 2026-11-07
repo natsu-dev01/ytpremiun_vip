@@ -5,6 +5,24 @@ Todos los cambios importantes de **ytpremiun-vip** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y
 el versionado sigue [SemVer](https://semver.org/lang/es/).
 
+## [0.3.0] - 2026-11-07
+
+### Añadido
+
+- Dependencia `imageio-ffmpeg`: `pip install` trae un binario de FFmpeg
+  incluido, así que ya no hace falta instalarlo ni configurar el `PATH`.
+- `find_ffmpeg()` detecta primero `FFMPEG` y el `PATH`, después el binario
+  incluido y por último las rutas habituales de Windows.
+- `extract_audio()` copia el archivo directamente cuando la extensión de
+  origen y destino coinciden (por ejemplo M4A a M4A), sin ejecutar FFmpeg.
+- Tests del binario incluido y de la copia directa sin FFmpeg.
+
+### Cambiado
+
+- El mensaje de error de FFmpeg ahora explica cómo reinstalar el paquete o
+  definir la variable `FFMPEG`.
+- Documentación de requisitos, instalación y wrapper de Node.js actualizada.
+
 ## [0.2.0] - 2026-11-07
 
 ### Añadido
