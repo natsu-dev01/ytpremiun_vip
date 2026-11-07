@@ -1,4 +1,8 @@
-# ytpremiun-vip
+<p align="center">
+  <img src="assets/ytpremiun-vip.jpeg" alt="ytpremiun-vip" width="800">
+</p>
+
+<h1 align="center">ytpremiun-vip</h1>
 
 [![Tests](https://github.com/natsu-dev01/ytpremiun_vip/actions/workflows/tests.yml/badge.svg)](https://github.com/natsu-dev01/ytpremiun_vip/actions/workflows/tests.yml)
 [![Licencia: MIT](https://img.shields.io/badge/licencia-MIT-yellow.svg)](LICENSE)
