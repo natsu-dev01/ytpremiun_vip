@@ -214,6 +214,30 @@ Resultados medidos en Windows con 6 conexiones:
 > La velocidad depende de tu ISP, del nodo de YouTube y de la hora. Los
 > tiempos de MP3/MP4 finales incluyen además la conversión o unión con ffmpeg.
 
+### Si el MP3 tarda más, es por la conversión
+
+En los archivos de audio, la descarga ya es rápida; el tiempo extra de MP3 lo
+consume ffmpeg al recodificar. Si no necesitas MP3, usa **M4A**: se copia el
+audio original de YouTube sin recodificar y termina en segundos.
+
+| Audio | MP3 192K | M4A (copia directa) |
+| --- | --- | --- |
+| 1 h | ~20 s | **~6 s** |
+| 2 h | ~38 s | **~11 s** |
+
+```bash
+ytpremiun-vip -x --audio-format m4a "https://youtu.be/VIDEO"
+```
+
+```python
+descargar_audio("https://youtu.be/VIDEO", formato_audio="m4a")
+```
+
+Probar distintos niveles de compresión de MP3 (`-compression_level`) apenas
+supone un 5–10 % de mejora, así que no compensa el riesgo de perder calidad.
+La decodificación MP3 es un proceso ligado a la CPU: para reducir el tiempo de
+forma drástica hay que evitar la recodificación.
+
 ---
 
 ## Uso como librería (bots)
