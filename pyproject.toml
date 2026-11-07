@@ -1,0 +1,55 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ytpremiun-vip"
+version = "0.1.0"
+description = "Descargador de YouTube propio (sin yt-dlp) con API para bots: video, audio, playlists y subtítulos"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+    { name = "natsu-dev01" },
+]
+keywords = [
+    "youtube",
+    "downloader",
+    "innertube",
+    "whatsapp",
+    "bot",
+    "playlist",
+    "subtitles",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Internet :: WWW/HTTP",
+    "Topic :: Multimedia :: Sound/Audio",
+    "Topic :: Multimedia :: Video",
+]
+dependencies = ["requests>=2.31.0"]
+
+[project.urls]
+Homepage = "https://github.com/natsu-dev01/ytpremiun_vip"
+Repository = "https://github.com/natsu-dev01/ytpremiun_vip"
+Issues = "https://github.com/natsu-dev01/ytpremiun_vip/issues"
+Changelog = "https://github.com/natsu-dev01/ytpremiun_vip/blob/main/CHANGELOG.md"
+License = "https://github.com/natsu-dev01/ytpremiun_vip/blob/main/LICENSE"
+
+[project.scripts]
+ytpremiun-vip = "ytpremiun_vip.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["ytpremiun_vip*"]
+
+[tool.setuptools]
+license-files = ["LICENSE"]

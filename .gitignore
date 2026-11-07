@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+
+# Salidas del descargador
+downloads/
+media/
+*.part
+.ytpremiun-vip-tmp/
+
+# Datos sensibles y locales
+cookies.txt
+.env
+.env.*
+!.env.example
+*.log
+
+# Editores y sistema
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
