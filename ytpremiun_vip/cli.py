@@ -160,6 +160,13 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
     parser.add_argument(
+        "-j", "--jobs", type=int, default=1,
+        help=(
+            "Videos que se descargan a la vez en playlists o listas de URLs "
+            "(por defecto: 1). Prueba 2-4 si tu conexión lo permite"
+        ),
+    )
+    parser.add_argument(
         "--timeout", type=float, default=20.0,
         help="Timeout de red en segundos (por defecto: 20)",
     )
@@ -278,6 +285,7 @@ def main(argv: list[str] | None = None) -> int:
         retries=args.retries,
         timeout=args.timeout,
         connections=args.connections,
+        jobs=args.jobs,
         proxy=args.proxy,
         cookies=Path(args.cookies) if args.cookies else None,
         list_formats=args.list_formats,

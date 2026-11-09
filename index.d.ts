@@ -45,6 +45,10 @@ export interface Opciones {
   conexiones?: number;
   /** Alias de `conexiones`. */
   connections?: number;
+  /** Videos que se descargan a la vez en playlists o listas (por defecto 1). */
+  trabajos?: number;
+  /** Alias de `trabajos`. */
+  jobs?: number;
   /** Timeout de red en segundos. */
   timeout?: number;
   /** Proxy HTTP/SOCKS. */

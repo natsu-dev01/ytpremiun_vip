@@ -60,6 +60,7 @@ class Opciones:
     reintentos: int = 5
     timeout: float = 20.0
     conexiones: int = DEFAULT_CONNECTIONS
+    trabajos: int = 1
     proxy: str | None = None
     cookies: str | Path | None = None
 
@@ -90,6 +91,7 @@ class Opciones:
             retries=self.reintentos,
             timeout=self.timeout,
             connections=self.conexiones,
+            jobs=self.trabajos,
             proxy=self.proxy,
             cookies=Path(self.cookies) if self.cookies else None,
         )
@@ -221,6 +223,7 @@ def descargar(
     cookies: str | Path | None = None,
     proxy: str | None = None,
     conexiones: int | None = None,
+    trabajos: int | None = None,
     silencioso: bool | None = None,
 ) -> list[Descarga]:
     """Descarga una o varias URLs y devuelve un resultado por cada video.
@@ -243,6 +246,7 @@ def descargar(
         cookies=cookies,
         proxy=proxy,
         conexiones=conexiones,
+        trabajos=trabajos,
         silencioso=silencioso,
     )
     return _ejecutar(urls, ajustadas)
@@ -319,6 +323,7 @@ def descargar_playlist(
     cookies: str | Path | None = None,
     proxy: str | None = None,
     conexiones: int | None = None,
+    trabajos: int | None = None,
     silencioso: bool | None = None,
 ) -> list[Descarga]:
     """Descarga una playlist completa (o los elementos indicados)."""
@@ -334,6 +339,7 @@ def descargar_playlist(
         cookies=cookies,
         proxy=proxy,
         conexiones=conexiones,
+        trabajos=trabajos,
         silencioso=silencioso,
     )
     return _ejecutar(url, ajustadas)

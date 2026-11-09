@@ -5,8 +5,10 @@ from __future__ import annotations
 import json
 import os
 import sys
+import threading
 import time
 import traceback
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -53,6 +55,7 @@ class Options:
     retries: int = 5
     timeout: float = 20.0
     connections: int = DEFAULT_CONNECTIONS
+    jobs: int = 1
     proxy: str | None = None
     cookies: Path | None = None
     list_formats: bool = False
@@ -92,6 +95,8 @@ class Downloader:
         self.innertube = InnertubeClient(self.http, verbose=options.verbose)
         self.playlists = PlaylistClient(self.http)
         self._archive = self._load_archive()
+        self._archive_lock = threading.Lock()
+        self._print_lock = threading.Lock()
 
     # ------------------------------------------------------------------ cola
     def discover(
@@ -170,19 +175,43 @@ class Downloader:
         if self.options.max_downloads is not None:
             jobs = jobs[: max(0, self.options.max_downloads)]
 
-        results: list[Result] = []
         total = len(jobs)
-        for position, job in enumerate(jobs, 1):
-            try:
-                results.append(self.process(job, position, total))
-            except KeyboardInterrupt:
-                raise
-            except Exception as exc:
-                if self.options.verbose:
-                    traceback.print_exc()
-                self._warn(f"✗ {job.video_id}: {exc}")
-                results.append(Result(job=job, status="failed", error=str(exc)))
-        return results
+        if total == 0:
+            return []
+
+        workers = max(1, min(int(self.options.jobs or 1), total))
+        if workers == 1:
+            return [
+                self._process_safe(job, position, total)
+                for position, job in enumerate(jobs, 1)
+            ]
+
+        # Varios videos a la vez: útil para playlists o listas de URLs. El
+        # orden de los resultados se conserva aunque terminen desordenados.
+        results: list[Result | None] = [None] * total
+        with ThreadPoolExecutor(
+            max_workers=workers,
+            thread_name_prefix="ytpremiun-job",
+        ) as pool:
+            futures = [
+                pool.submit(self._process_safe, job, position, total)
+                for position, job in enumerate(jobs, 1)
+            ]
+            for index, future in enumerate(futures):
+                results[index] = future.result()
+        return [result for result in results if result is not None]
+
+    def _process_safe(self, job: Job, position: int, total: int) -> Result:
+        """Procesa un trabajo sin dejar que un fallo detenga la cola."""
+        try:
+            return self.process(job, position, total)
+        except KeyboardInterrupt:
+            raise
+        except Exception as exc:
+            if self.options.verbose:
+                traceback.print_exc()
+            self._warn(f"✗ {job.video_id}: {exc}")
+            return Result(job=job, status="failed", error=str(exc))
 
     # -------------------------------------------------------------- descarga
     def process(self, job: Job, position: int, total: int) -> Result:
@@ -297,15 +326,21 @@ class Downloader:
                 temp_dir
                 / f"{info.id}.f{selection.audio.itag}.{selection.audio.ext}"
             )
-            self._download_source(
-                selection.video,
-                video_path,
-                f"video {selection.video.resolution}",
-            )
-            self._download_source(
-                selection.audio,
-                audio_path,
-                f"audio {selection.audio.ext}",
+            # Descargar ambos flujos a la vez casi duplica la velocidad en los
+            # formatos separados de YouTube (1080p y superiores).
+            self._download_sources(
+                [
+                    (
+                        selection.video,
+                        video_path,
+                        f"video {selection.video.resolution}",
+                    ),
+                    (
+                        selection.audio,
+                        audio_path,
+                        f"audio {selection.audio.ext}",
+                    ),
+                ]
             )
             created += [video_path, audio_path]
 
@@ -457,6 +492,32 @@ class Downloader:
             restrict=self.options.restrict_filenames,
         )
 
+    def _download_sources(
+        self, sources: list[tuple[Format, Path, str]]
+    ) -> None:
+        """Descarga varias pistas en paralelo y espera a que terminen todas."""
+        if len(sources) == 1:
+            self._download_source(*sources[0])
+            return
+
+        errors: list[BaseException] = []
+        with ThreadPoolExecutor(
+            max_workers=len(sources),
+            thread_name_prefix="ytpremiun-stream",
+        ) as pool:
+            futures = [
+                pool.submit(self._download_source, *source) for source in sources
+            ]
+            for future in futures:
+                try:
+                    future.result()
+                except KeyboardInterrupt:
+                    raise
+                except BaseException as exc:
+                    errors.append(exc)
+        if errors:
+            raise errors[0]
+
     def _download_source(self, fmt: Format, destination: Path, label: str) -> None:
         printer = ProgressPrinter(
             label,
@@ -556,17 +617,20 @@ class Downloader:
     def _archive_add(self, video_id: str) -> None:
         if not self.options.archive:
             return
-        path = Path(self.options.archive)
-        path.parent.mkdir(parents=True, exist_ok=True)
-        if video_id in self._archive:
-            return
-        with path.open("a", encoding="utf-8") as handle:
-            handle.write(video_id + "\n")
-        self._archive.add(video_id)
+        with self._archive_lock:
+            path = Path(self.options.archive)
+            path.parent.mkdir(parents=True, exist_ok=True)
+            if video_id in self._archive:
+                return
+            with path.open("a", encoding="utf-8") as handle:
+                handle.write(video_id + "\n")
+            self._archive.add(video_id)
 
     def _log(self, message: str) -> None:
         if not self.options.quiet:
-            print(message, flush=True)
+            with self._print_lock:
+                print(message, flush=True)
 
     def _warn(self, message: str) -> None:
-        print(message, file=sys.stderr, flush=True)
+        with self._print_lock:
+            print(message, file=sys.stderr, flush=True)

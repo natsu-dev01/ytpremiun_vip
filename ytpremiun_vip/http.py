@@ -37,6 +37,10 @@ RANGE_SIZE = 1024 * 1024
 PARALLEL_RANGE_SIZE = 2 * 1024 * 1024
 DEFAULT_CONNECTIONS = 6
 
+# Leer bloques más grandes reduce las llamadas a Python y el número de
+# escrituras en disco, sobre todo con conexiones rápidas.
+DEFAULT_CHUNK_SIZE = 1024 * 1024
+
 _CONTENT_RANGE_RE = re.compile(r"bytes\s+(\d+)-(\d+)/(\d+|\*)", re.I)
 
 
@@ -131,8 +135,11 @@ class HttpClient:
             load_netscape_cookies(self.session, cookies)
 
         # Cada hilo de descarga usa su propia sesión: requests.Session no es
-        # completamente segura para compartir entre hilos.
+        # completamente segura para compartir entre hilos. El hilo que creó el
+        # cliente conserva la sesión principal para no romper la caché de
+        # conexiones ni el comportamiento de los tests.
         self._local = threading.local()
+        self._owner_thread = threading.get_ident()
 
     def _timeout(self) -> tuple[float, float]:
         return (min(self.timeout, 30.0), max(self.timeout, 30.0))
@@ -166,6 +173,8 @@ class HttpClient:
         return session
 
     def _thread_session(self) -> requests.Session:
+        if threading.get_ident() == self._owner_thread:
+            return self.session
         session = getattr(self._local, "session", None)
         if session is None:
             session = self._build_session()
@@ -175,7 +184,7 @@ class HttpClient:
     def request(self, method: str, url: str, **kwargs: Any) -> requests.Response:
         kwargs.setdefault("timeout", self._timeout())
         try:
-            return self.session.request(method, url, **kwargs)
+            return self._thread_session().request(method, url, **kwargs)
         except requests.RequestException as exc:
             raise NetworkError(f"Error de red: {exc}") from exc
 
@@ -235,7 +244,7 @@ class HttpClient:
             "Range": "bytes=0-0",
         }
         try:
-            with self.session.get(
+            with self._thread_session().get(
                 url,
                 headers=request_headers,
                 stream=True,
@@ -369,9 +378,9 @@ class HttpClient:
             start = index * range_size
             return min(total, start + range_size) - start
 
-        done_bytes = sum(chunk_length(index) for index in completed)
+        done_bytes = [sum(chunk_length(index) for index in completed)]
         if progress:
-            progress(done_bytes, total)
+            progress(done_bytes[0], total)
 
         pending = [index for index in range(count) if index not in completed]
         if not pending:
@@ -433,11 +442,9 @@ class HttpClient:
                         handle.flush()
                         with lock:
                             completed.add(index)
-                            done_bytes = sum(
-                                chunk_length(item) for item in completed
-                            )
+                            done_bytes[0] += expected
                             if progress:
-                                progress(done_bytes, total)
+                                progress(done_bytes[0], total)
                             now = time.monotonic()
                             if (
                                 now - saved_at[0] >= 1.0
@@ -565,6 +572,7 @@ class HttpClient:
         last_error: Exception | None = None
         step = max(1, int(range_size))
         timeout = self._download_timeout()
+        session = self._thread_session()
 
         while True:
             end = done + step - 1
@@ -579,7 +587,7 @@ class HttpClient:
             }
 
             try:
-                with self.session.get(
+                with session.get(
                     url,
                     headers=request_headers,
                     stream=True,
@@ -706,7 +714,7 @@ class HttpClient:
         progress: ProgressCallback | None = None,
         headers: dict[str, str] | None = None,
         resume: bool = True,
-        chunk_size: int = 256 * 1024,
+        chunk_size: int = DEFAULT_CHUNK_SIZE,
         range_size: int = RANGE_SIZE,
         connections: int = 1,
     ) -> int:
@@ -716,6 +724,11 @@ class HttpClient:
         archivo de estado para reanudar sin repetir los bloques ya bajados. Si
         el servidor no admite rangos, vuelve automáticamente al modo secuencial
         de bloques de 1 MiB.
+
+        Cuando ya se conoce el tamaño (por ejemplo, el ``contentLength`` que
+        devuelve YouTube) no se hace la petición de sondeo: se va directo al
+        modo paralelo, y si el servidor ignora ``Range`` se reintenta en
+        secuencial. Eso ahorra una ida y vuelta por cada archivo.
         """
         dest = Path(destination)
         dest.parent.mkdir(parents=True, exist_ok=True)
@@ -726,11 +739,17 @@ class HttpClient:
         attempts = self.retries + 1
         requested_connections = max(1, min(int(connections), 16))
 
-        if requested_connections > 1:
-            probe_total, ranges_ok = self._probe_ranges(url, headers)
-            if probe_total is not None:
-                total = probe_total
-            if ranges_ok and total is not None:
+        # Para archivos pequeños el modo secuencial gana: evita hilos, archivo
+        # de estado y varias conexiones para un único bloque.
+        large_enough = total is None or total > PARALLEL_RANGE_SIZE
+        if requested_connections > 1 and large_enough:
+            if total is None:
+                probe_total, ranges_ok = self._probe_ranges(url, headers)
+                if probe_total is not None:
+                    total = probe_total
+            else:
+                ranges_ok = True
+            if ranges_ok and total is not None and total > PARALLEL_RANGE_SIZE:
                 try:
                     return self._parallel_download(
                         url,

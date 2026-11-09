@@ -28,6 +28,7 @@ class ParserTests(unittest.TestCase):
         self.assertFalse(args.audio_only)
         self.assertFalse(args.write_subs)
         self.assertFalse(args.json_result)
+        self.assertEqual(args.jobs, 1)
 
     def test_flags(self):
         args = build_parser().parse_args(
@@ -41,6 +42,7 @@ class ParserTests(unittest.TestCase):
                 "--playlist-items", "1-2",
                 "--merge-output-format", "mkv",
                 "--max-downloads", "3",
+                "--jobs", "3",
                 VIDEO,
             ]
         )
@@ -53,6 +55,7 @@ class ParserTests(unittest.TestCase):
         self.assertEqual(args.playlist_items, "1-2")
         self.assertEqual(args.merge_output_format, "mkv")
         self.assertEqual(args.max_downloads, 3)
+        self.assertEqual(args.jobs, 3)
 
     def test_invalid_choice(self):
         with contextlib.redirect_stderr(io.StringIO()):

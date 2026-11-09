@@ -152,6 +152,11 @@ class OpcionesTests(unittest.TestCase):
         self.assertEqual(options.timeout, 5)
         self.assertEqual(options.proxy, "http://proxy")
 
+    def test_trabajos_paralelos(self):
+        options = Opciones(trabajos=3).a_options()
+        self.assertEqual(options.jobs, 3)
+        self.assertEqual(Opciones().a_options().jobs, 1)
+
     def test_ajustar_no_muta_la_configuracion_original(self):
         base = Opciones(carpeta="original")
         ajustada = _ajustar(base, carpeta="nueva")

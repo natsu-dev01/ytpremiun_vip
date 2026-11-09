@@ -246,6 +246,10 @@ function _buildArgs(urls, opciones = {}, modo = "generic") {
   if (conexiones != null) {
     args.push("--connections", String(conexiones));
   }
+  const trabajos = opciones.trabajos ?? opciones.jobs;
+  if (trabajos != null) {
+    args.push("--jobs", String(trabajos));
+  }
   if (opciones.timeout != null) {
     args.push("--timeout", String(opciones.timeout));
   }

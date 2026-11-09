@@ -60,6 +60,13 @@ test("mapea conexiones en paralelo", () => {
   assert.equal(alias[alias.indexOf("--connections") + 1], "3");
 });
 
+test("mapea trabajos en paralelo", () => {
+  const args = _buildArgs(URL, { trabajos: 3 }, "playlist");
+  assert.equal(args[args.indexOf("--jobs") + 1], "3");
+  const alias = _buildArgs(URL, { jobs: 2 }, "playlist");
+  assert.equal(alias[alias.indexOf("--jobs") + 1], "2");
+});
+
 test("acepta varias URLs", () => {
   const args = _buildArgs([URL, "https://youtu.be/dQw4w9WgXcQ"], {}, "generic");
   assert.deepEqual(args.slice(-2), [URL, "https://youtu.be/dQw4w9WgXcQ"]);

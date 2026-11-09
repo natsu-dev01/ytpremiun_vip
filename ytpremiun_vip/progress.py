@@ -4,9 +4,15 @@ from __future__ import annotations
 
 import shutil
 import sys
+import threading
 import time
 
 from .utils import human_bytes, human_eta, human_speed, truncate
+
+
+# Varios hilos (descargas de video+audio o varios trabajos a la vez) pueden
+# escribir progreso al mismo tiempo. El candado evita líneas mezcladas.
+_OUTPUT_LOCK = threading.Lock()
 
 
 class ProgressPrinter:
@@ -26,6 +32,7 @@ class ProgressPrinter:
         self._last_done = 0
         self._speed = 0.0
         self._last_printed_pct = -1
+        self._last_render = 0.0
         self._started = False
         self._finished = False
         try:
@@ -49,7 +56,15 @@ class ProgressPrinter:
         if not self._started:
             self._started = True
             if not self._is_tty:
-                print(f"  {self.label} ...", flush=True)
+                with _OUTPUT_LOCK:
+                    print(f"  {self.label} ...", flush=True)
+
+        # Redibujar la barra 10 veces por segundo es suficiente para que se vea
+        # fluida y evita gastar CPU con descargas muy rápidas.
+        finished = total is not None and done >= total
+        if self._is_tty and not finished and now - self._last_render < 0.1:
+            return
+        self._last_render = now
 
         if total:
             pct = min(100.0, done * 100.0 / total)
@@ -61,20 +76,24 @@ class ProgressPrinter:
                     f"{human_speed(self._speed)} ETA {human_eta(eta)}"
                 )
                 width = max(20, shutil.get_terminal_size((100, 20)).columns - 1)
-                print("\r" + line[:width].ljust(width), end="", flush=True)
+                with _OUTPUT_LOCK:
+                    print("\r" + line[:width].ljust(width), end="", flush=True)
             else:
                 bucket = int(pct // 20) * 20
                 if bucket > self._last_printed_pct:
                     self._last_printed_pct = bucket
-                    print(f"  {self.label}: {bucket}%", flush=True)
+                    with _OUTPUT_LOCK:
+                        print(f"  {self.label}: {bucket}%", flush=True)
         elif self._is_tty:
             line = f"  {self.label} {human_bytes(done)} {human_speed(self._speed)}"
             width = max(20, shutil.get_terminal_size((100, 20)).columns - 1)
-            print("\r" + line[:width].ljust(width), end="", flush=True)
+            with _OUTPUT_LOCK:
+                print("\r" + line[:width].ljust(width), end="", flush=True)
 
     def finish(self) -> None:
         if not self.enabled or self._finished:
             return
         self._finished = True
         if self._is_tty and self._started:
-            print()
+            with _OUTPUT_LOCK:
+                print()

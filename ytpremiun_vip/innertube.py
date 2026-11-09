@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+import threading
 from dataclasses import dataclass, field, asdict
 from typing import Any
 from urllib.parse import parse_qs
@@ -231,28 +232,34 @@ class InnertubeClient:
         self.verbose = verbose
         self._visitor_data: str | None = None
         self._visitor_loaded = False
+        self._visitor_lock = threading.Lock()
 
     def _ensure_visitor_data(self) -> str | None:
         """Obtiene el visitorData de la sesión (necesario para visionOS).
 
         YouTube liga el cliente visionOS a la cookie VISITOR_INFO1_LIVE. Un
         primer GET a la portada crea esa cookie y deja el identificador en
-        ytcfg. Sin él, el cliente responde ``LOGIN_REQUIRED``.
+        ytcfg. Sin él, el cliente responde ``LOGIN_REQUIRED``. El candado evita
+        que dos descargas simultáneas pidan la portada a la vez o que una use
+        el cliente visionOS antes de tener el identificador.
         """
         if self._visitor_loaded:
             return self._visitor_data
-        self._visitor_loaded = True
-        try:
-            page = self.http.get_text(
-                "https://www.youtube.com/",
-                headers={"User-Agent": DEFAULT_USER_AGENT},
-            )
-        except NetworkError:
-            return None
-        match = _VISITOR_DATA_RE.search(page)
-        if match:
-            self._visitor_data = match.group(1)
-        return self._visitor_data
+        with self._visitor_lock:
+            if self._visitor_loaded:
+                return self._visitor_data
+            self._visitor_loaded = True
+            try:
+                page = self.http.get_text(
+                    "https://www.youtube.com/",
+                    headers={"User-Agent": DEFAULT_USER_AGENT},
+                )
+            except NetworkError:
+                return None
+            match = _VISITOR_DATA_RE.search(page)
+            if match:
+                self._visitor_data = match.group(1)
+            return self._visitor_data
 
     def get_video(self, video_id: str) -> VideoInfo:
         errors: list[str] = []

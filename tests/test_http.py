@@ -369,6 +369,41 @@ class ParallelDownloadTests(unittest.TestCase):
             self.assertEqual(size, 10)
             self.assertEqual(dest.read_bytes(), data)
 
+    def test_known_size_skips_probe_request(self):
+        data = b"abcdefghij"
+        session = RangeSession(data)
+        self.client._thread_session = lambda: session
+        self.client._probe_ranges = Mock(
+            side_effect=AssertionError("no se debe sondear si ya hay tamaño")
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            dest = Path(tmp) / "archivo.bin"
+            size = self.client.stream_download(
+                "https://x", dest, expected_size=len(data), connections=3
+            )
+            self.assertEqual(size, 10)
+            self.assertEqual(dest.read_bytes(), data)
+        self.client._probe_ranges.assert_not_called()
+
+    def test_small_file_uses_sequential_without_state(self):
+        data = b"abc"
+        self.client.session.get = Mock(
+            return_value=FakeStreamResponse(
+                status=206,
+                chunks=(data,),
+                headers={"Content-Range": f"bytes 0-2/{len(data)}"},
+            )
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            dest = Path(tmp) / "archivo.bin"
+            size = self.client.stream_download(
+                "https://x", dest, expected_size=len(data), connections=4
+            )
+            self.assertEqual(size, 3)
+            self.assertEqual(dest.read_bytes(), data)
+            self.assertFalse(dest.with_name(dest.name + ".part.state").exists())
+        self.assertEqual(self.client.session.get.call_count, 1)
+
 
 if __name__ == "__main__":
     unittest.main()

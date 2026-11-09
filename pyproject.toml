@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ytpremiun-vip"
-version = "0.3.0"
+version = "0.4.0"
 description = "Descargador de YouTube propio (sin yt-dlp) con API para bots: video, audio, playlists y subtítulos"
 readme = "README.md"
 requires-python = ">=3.10"

@@ -5,6 +5,39 @@ Todos los cambios importantes de **ytpremiun-vip** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y
 el versionado sigue [SemVer](https://semver.org/lang/es/).
 
+## [0.4.0] - 2026-11-09
+
+### Añadido
+
+- `-j/--jobs` (API: `trabajos`, Node: `trabajos`/`jobs`) para descargar varios
+  videos de una playlist o lista de URLs a la vez. Los resultados conservan el
+  orden original aunque terminen desordenados.
+- Tests de descarga simultánea de video+audio, de trabajos en paralelo, del
+  sondeo omitido y de archivos pequeños.
+
+### Rendimiento
+
+- El video y el audio de los formatos separados (1080p y superiores) ahora se
+  descargan simultáneamente en lugar de uno detrás de otro.
+- Si YouTube ya informa el tamaño del archivo, se omite la petición
+  `Range: bytes=0-0` de sondeo y se descarga directamente.
+- Los archivos de 2 MiB o menos usan el modo secuencial, sin hilos ni archivo
+  de estado.
+- Los bloques de lectura pasan de 256 KiB a 1 MiB para reducir llamadas
+  internas y escrituras.
+- El progreso se redibuja como máximo 10 veces por segundo y usa un candado
+  para no mezclar líneas cuando hay descargas simultáneas.
+- El contador de bytes completados de la descarga paralela ya no recalcula la
+  suma de todos los bloques en cada iteración.
+
+### Corregido
+
+- Las peticiones HTTP usan una sesión por hilo, también en la sonda inicial y
+  en el modo secuencial, para que las descargas concurrentes sean seguras.
+- `visitorData` se obtiene una sola vez aunque varias descargas arranquen a la
+  vez.
+- Añadir entradas al archivo de historial es seguro con trabajos en paralelo.
+
 ## [0.3.0] - 2026-11-07
 
 ### Añadido

@@ -207,6 +207,31 @@ from ytpremiun_vip import Opciones, descargar_audio
 descargar_audio("https://youtu.be/VIDEO", opciones=Opciones(conexiones=8))
 ```
 
+Mejoras adicionales que se aplican solas:
+
+- **Video y audio a la vez.** En calidades 1080p o superiores YouTube entrega
+  dos pistas separadas; ahora se descargan simultáneamente en lugar de una
+  detrás de otra.
+- **Sin petición de sondeo.** Si YouTube ya indica el tamaño del archivo, se
+  empieza a descargar directamente y se ahorra una ida y vuelta por pista.
+- **Bloques de lectura de 1 MiB.** Menos llamadas internas y menos escrituras,
+  especialmente con conexiones rápidas.
+- **Varios videos en paralelo.** En playlists o listas de URLs puedes bajar
+  varios elementos a la vez:
+
+```bash
+ytpremiun-vip -j 3 "https://www.youtube.com/playlist?list=PL..."
+```
+
+```python
+from ytpremiun_vip import Opciones, descargar_playlist
+descargar_playlist("https://www.youtube.com/playlist?list=PL...", trabajos=3)
+```
+
+```js
+await descargarPlaylist(url, { trabajos: 3 });
+```
+
 La descarga se guarda en un archivo `.part` y un `.part.state`. Si se corta
 la conexión o pulsas `Ctrl+C`, vuelve a ejecutar el mismo comando: se reanudan
 solo los bloques que faltan. Si el servidor no admite rangos, la librería
@@ -326,8 +351,8 @@ for resultado in resultados:
 | `listar_formatos(url, ...)` | `str` | Tabla de formatos disponibles como texto. |
 
 Los parámetros más usados son `carpeta`, `formato_audio`, `calidad_audio`,
-`formato` (selector), `contenedor`, `conexiones`, `subtitulos`, `cookies`,
-`proxy`, `silencioso`, `opciones`.
+`formato` (selector), `contenedor`, `conexiones`, `trabajos` (varios videos a
+la vez), `subtitulos`, `cookies`, `proxy`, `silencioso`, `opciones`.
 
 ### Resultado de una descarga
 
@@ -404,9 +429,9 @@ resultado = await asyncio.to_thread(
 Las opciones del wrapper usan nombres en español: `carpeta`, `formato`,
 `formatoAudio`, `calidadAudio`, `contenedor`, `playlist`,
 `elementosPlaylist`, `subtitulos`, `cookies`, `proxy`, `conexiones`,
-`timeout`, `reintentos`, entre otras. Cada resultado tiene `ok`, `estado`,
-`titulo`, `autor`, `duracion`, `archivo`, `archivos` y `error`, igual que la
-API de Python.
+`trabajos`, `timeout`, `reintentos`, entre otras. Cada resultado tiene `ok`,
+`estado`, `titulo`, `autor`, `duracion`, `archivo`, `archivos` y `error`,
+igual que la API de Python.
 
 ---
 
@@ -440,6 +465,7 @@ API de Python.
 | `-v, --verbose` | Muestra trazas detalladas de errores. |
 | `--retries N` | Reintentos por descarga. Por defecto `5`. |
 | `--connections N` | Conexiones en paralelo por descarga. Por defecto `6`; usa `1` para el modo secuencial. |
+| `-j, --jobs N` | Videos que se descargan a la vez en playlists o listas de URLs. Por defecto `1`. |
 | `--timeout SEGUNDOS` | Timeout de red. Por defecto `20`. |
 | `--proxy URL` | Proxy HTTP/SOCKS. |
 | `--cookies ARCHIVO` | Cookies en formato Netscape (exportadas del navegador). |
@@ -515,7 +541,7 @@ Filtros disponibles: `height`, `width`, `fps`, `ext`, `vcodec`, `acodec`,
 `filesize`, `tbr`, `abr`, `itag`. Operadores: `=`, `!=`, `<`, `<=`, `>`, `>=`,
 `^=` (empieza por), `$=` (termina en), `*=` (contiene).
 
-Cuando el video y el audio van separados, se descargan en paralelo secuencial a
+Cuando el video y el audio van separados, se descargan **a la vez** a
 `.ytpremiun-vip-tmp/` y se unen con ffmpeg **sin recodificar**. Si el MP4 falla, se
 reintenta automáticamente en MKV.
 

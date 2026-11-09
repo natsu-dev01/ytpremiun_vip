@@ -5,11 +5,12 @@ from __future__ import annotations
 import contextlib
 import io
 import tempfile
+import threading
 import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from ytpremiun_vip.downloader import Downloader, Job, Options
+from ytpremiun_vip.downloader import Downloader, Job, Options, Result
 from ytpremiun_vip.errors import ExtractionError, MediaError
 from ytpremiun_vip.formats import Selection
 from ytpremiun_vip.innertube import Format, VideoInfo
@@ -338,6 +339,35 @@ class ProcessTests(unittest.TestCase):
             self.assertEqual(final.read_bytes(), b"mp3")
             self.assertEqual(extract.call_args.args[2], "mp3")
 
+    def test_split_streams_download_at_the_same_time(self):
+        info = make_info(
+            [
+                make_format(137, vcodec="avc1", height=1080),
+                make_format(140, ext="m4a", acodec="mp4a", audio_bitrate=128_000),
+            ]
+        )
+
+        class BarrierHttp(FakeHttp):
+            def __init__(self):
+                super().__init__()
+                self.barrier = threading.Barrier(2, timeout=5)
+
+            def stream_download(self, *args, **kwargs):
+                # Solo continúa cuando las dos pistas están descargando.
+                self.barrier.wait()
+                return super().stream_download(*args, **kwargs)
+
+        def fake_merge(video, audio, output, metadata=None):
+            Path(output).write_bytes(b"merged")
+
+        with tempfile.TemporaryDirectory() as tmp:
+            downloader = make_downloader(tmp, info)
+            downloader.http = BarrierHttp()
+            with patch("ytpremiun_vip.downloader.merge", side_effect=fake_merge):
+                result = downloader.process(Job(VIDEO, "https://x"), 1, 1)
+            self.assertEqual(result.status, "ok")
+            self.assertEqual(len(downloader.http.downloads), 2)
+
     def test_split_video_audio_merge(self):
         info = make_info(
             [
@@ -431,6 +461,49 @@ class ProcessTests(unittest.TestCase):
             downloader = make_downloader(tmp, info, max_downloads=0)
             results = downloader.run([Job(VIDEO, "https://x")])
             self.assertEqual(results, [])
+
+
+class ParallelRunTests(unittest.TestCase):
+    def test_parallel_jobs_overlap_and_preserve_order(self):
+        barrier = threading.Barrier(2, timeout=5)
+        jobs = [Job("aaaaaaaaaaa", "https://a"), Job("bbbbbbbbbbb", "https://b")]
+
+        with tempfile.TemporaryDirectory() as tmp:
+            downloader = Downloader(Options(paths=Path(tmp), quiet=True, jobs=2))
+
+            def fake_process(job, position, total):
+                barrier.wait()
+                return Result(job=job, status="ok")
+
+            with patch.object(downloader, "process", side_effect=fake_process):
+                results = downloader.run(jobs)
+
+        self.assertEqual([result.job.video_id for result in results], [
+            "aaaaaaaaaaa",
+            "bbbbbbbbbbb",
+        ])
+
+    def test_parallel_jobs_capture_failures_in_order(self):
+        jobs = [
+            Job("aaaaaaaaaaa", "https://a"),
+            Job("bbbbbbbbbbb", "https://b"),
+        ]
+
+        with tempfile.TemporaryDirectory() as tmp:
+            downloader = Downloader(Options(paths=Path(tmp), quiet=True, jobs=2))
+
+            def fake_process(job, position, total):
+                if job.video_id == "bbbbbbbbbbb":
+                    raise RuntimeError("boom")
+                return Result(job=job, status="ok")
+
+            with patch.object(downloader, "process", side_effect=fake_process):
+                with contextlib.redirect_stderr(io.StringIO()):
+                    results = downloader.run(jobs)
+
+        self.assertEqual(results[0].status, "ok")
+        self.assertEqual(results[1].status, "failed")
+        self.assertIn("boom", results[1].error or "")
 
 
 if __name__ == "__main__":
