@@ -12,7 +12,6 @@
     "index.d.ts",
     "lib",
     "bin",
-    "api",
     "assets/ytpremiun-vip.jpeg"
   ],
   "scripts": {

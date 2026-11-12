@@ -25,9 +25,6 @@ el versionado sigue [SemVer](https://semver.org/lang/es/).
   `RangeNotSupportedError`), todas compatibles con `YtPremiunError`.
 - Tests de `parseInput`, `selectFormat`, `buildOutputPath`, `parseTimedtext`,
   `parseArgs` y del verificador nativo.
-- **API HTTP para VPS** en `api/`: cola de trabajos con concurrencia limitada,
-  progreso, API key, entrega de archivos con `Range`, limpieza por antigüedad y
-  cuota de disco, instalador para Ubuntu y servicio systemd.
 - Callback `onProgress` en la API de Node.js para seguir los bytes descargados
   de cada pista.
 
