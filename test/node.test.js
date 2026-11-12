@@ -8,6 +8,7 @@ const {
   YtPremiunVipError,
   ExtractionError,
   _buildArgs,
+  normalizarOpciones,
   verificar,
 } = require("../index.js");
 const { parseArgs } = require("../lib/cli");
@@ -265,4 +266,11 @@ test("los errores nativos heredan de YtPremiunError", () => {
   assert.ok(error instanceof YtPremiunError);
   assert.ok(error instanceof YtPremiunVipError);
   assert.equal(error.name, "ExtractionError");
+});
+
+test("normalizarOpciones conserva el callback onProgress", () => {
+  const callback = () => {};
+  assert.equal(normalizarOpciones({ onProgress: callback }).onProgress, callback);
+  assert.equal(normalizarOpciones({}).onProgress, null);
+  assert.equal(normalizarOpciones({ onProgress: "no" }).onProgress, null);
 });

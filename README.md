@@ -314,6 +314,31 @@ forma drástica hay que evitar la recodificación.
 
 ---
 
+## API HTTP para VPS
+
+El repositorio incluye `api/`, un servidor HTTP nativo (sin dependencias) con
+cola de trabajos, progreso, API key y entrega de archivos reanudable. Está
+pensado para un VPS pequeño.
+
+```bash
+git clone https://github.com/natsu-dev01/ytpremiun_vip.git /opt/ytpremiun
+bash /opt/ytpremiun/api/install.sh
+```
+
+El script instala Node.js y ffmpeg, genera la API key en
+`/etc/ytpremiun-api.env` y arranca el servicio systemd `ytpremiun-api`.
+
+```bash
+curl -X POST http://IP:3000/download \
+  -H "X-API-Key: TU_CLAVE" -H "Content-Type: application/json" \
+  -d '{"url":"https://youtu.be/VIDEO","modo":"audio"}'
+```
+
+La documentación completa (endpoints, opciones, límites y HTTPS) está en
+[`api/README.md`](api/README.md).
+
+---
+
 ## Uso como librería (bots)
 
 ### Python
@@ -658,6 +683,11 @@ ytpremiun-vip --write-subs --write-auto-subs --sub-langs all --sub-format vtt UR
 ├── package.json       Metadatos del paquete npm
 ├── bin/
 │   └── ytpremiun-vip.js  CLI nativo de Node.js (sin Python)
+├── api/               API HTTP para VPS
+│   ├── README.md        Endpoints y despliegue
+│   ├── install.sh       Instalación en Ubuntu
+│   ├── server.js        Servidor nativo (sin dependencias)
+│   └── ytpremiun-api.service
 ├── lib/               Motor nativo de Node.js (sin Python)
 │   ├── api.js           API de alto nivel
 │   ├── cli.js           Argumentos, opciones y resumen final

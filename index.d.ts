@@ -1,5 +1,14 @@
 export type Estado = "ok" | "omitido" | "fallido";
 
+export interface ProgresoDescarga {
+  /** Pista que se está descargando, por ejemplo `video 1080p60`. */
+  fuente: string;
+  /** Bytes descargados de la pista actual. */
+  bytes: number;
+  /** Tamaño total de la pista, o `null` si se desconoce. */
+  total: number | null;
+}
+
 export interface Opciones {
   /** Carpeta de salida. Por defecto `downloads`. */
   carpeta?: string;
@@ -61,6 +70,8 @@ export interface Opciones {
   progreso?: boolean;
   /** Muestra trazas detalladas de errores. */
   verbose?: boolean;
+  /** Callback opcional con el progreso de cada pista descargada. */
+  onProgress?: (progreso: ProgresoDescarga) => void;
 }
 
 export interface Resultado {

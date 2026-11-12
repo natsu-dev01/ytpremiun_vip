@@ -1,0 +1,26 @@
+[Unit]
+Description=ytpremiun-vip API (descargas de YouTube)
+Documentation=https://github.com/natsu-dev01/ytpremiun_vip
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ytpremiun
+Group=ytpremiun
+WorkingDirectory=/opt/ytpremiun
+EnvironmentFile=/etc/ytpremiun-api.env
+ExecStart=/usr/bin/node /opt/ytpremiun/api/server.js
+Restart=always
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/ytpremiun
+LimitNOFILE=65535
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
