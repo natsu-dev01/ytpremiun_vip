@@ -55,6 +55,12 @@ export interface Opciones {
   proxy?: string;
   /** Archivo de cookies en formato Netscape. */
   cookies?: string;
+  /** Silencia la salida normal (por defecto `true` en la API). */
+  silencioso?: boolean;
+  /** Muestra la barra de progreso (por defecto desactivada en la API). */
+  progreso?: boolean;
+  /** Muestra trazas detalladas de errores. */
+  verbose?: boolean;
 }
 
 export interface Resultado {
@@ -95,18 +101,34 @@ export interface InfoVideo {
 
 export interface Verificacion {
   ok: boolean;
-  python: string;
-  requests?: string;
-  version?: string;
+  motor: "node";
+  /** Versión de Node.js, por ejemplo `v22.11.0`. */
+  node: string;
+  /** Versión del paquete ytpremiun-vip. */
+  version: string;
+  /** Ruta o comando de ffmpeg, o `null` si no se encontró. */
   ffmpeg: string | null;
-  error?: string;
+  error: string | null;
 }
 
 export class YtPremiunError extends Error {
   codigo: string | number | null;
   stderr: string;
   resultados: Resultado[];
+  cause?: unknown;
 }
+
+export class YtPremiunVipError extends YtPremiunError {}
+export class NetworkError extends YtPremiunVipError {}
+export class ExtractionError extends YtPremiunVipError {}
+export class UnsupportedError extends ExtractionError {}
+export class DownloadError extends YtPremiunVipError {}
+export class MediaError extends YtPremiunVipError {}
+export class FFmpegNotFoundError extends MediaError {}
+export class RangeNotSupportedError extends DownloadError {}
+
+/** Versión del paquete. */
+export const VERSION: string;
 
 export function descargar(
   urls: string | string[],

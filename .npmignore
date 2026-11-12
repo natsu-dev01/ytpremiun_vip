@@ -1,4 +1,4 @@
-# El paquete npm solo necesita el wrapper y el código Python.
+# El paquete npm solo necesita index.js, index.d.ts, lib/ y bin/.
 __pycache__/
 *.py[cod]
 *.egg-info/

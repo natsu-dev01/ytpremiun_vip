@@ -5,6 +5,41 @@ Todos los cambios importantes de **ytpremiun-vip** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y
 el versionado sigue [SemVer](https://semver.org/lang/es/).
 
+## [0.5.0] - 2026-11-12
+
+### Añadido
+
+- **Motor nativo para npm, sin Python.** El paquete de Node.js ahora incluye
+  una implementación completa en JavaScript de InnerTube, selección de
+  formatos, descargas reanudables por rangos, playlists, subtítulos, progreso y
+  procesado con ffmpeg. `npm install` ya no necesita Python, `pip` ni
+  `requests`.
+- CLI nativo `ytpremiun-vip` (`bin/ytpremiun-vip.js`) con las mismas opciones
+  que la versión Python: `-F`, `-x`, `-f`, `-P`, `-a`, `--json`, `--playlist`,
+  `--connections`, `-j`, `--proxy`, `--cookies`, etc.
+- Dependencia opcional `ffmpeg-static`: el binario de ffmpeg se instala con npm
+  y se detecta automáticamente, además de `FFMPEG`, el `PATH`,
+  `@ffmpeg-installer/ffmpeg` y las rutas habituales de Windows.
+- Subclases de error (`YtPremiunVipError`, `NetworkError`, `ExtractionError`,
+  `UnsupportedError`, `DownloadError`, `MediaError`, `FFmpegNotFoundError` y
+  `RangeNotSupportedError`), todas compatibles con `YtPremiunError`.
+- Tests de `parseInput`, `selectFormat`, `buildOutputPath`, `parseTimedtext`,
+  `parseArgs` y del verificador nativo.
+
+### Cambiado
+
+- `verificar()` devuelve `{ ok, motor: "node", node, version, ffmpeg, error }`.
+  Ya no comprueba Python ni `requests`.
+- La API pública (`descargar`, `descargarAudio`, `descargarVideo`,
+  `descargarPlaylist`, `obtenerInfo`, `listarFormatos`) mantiene los nombres en
+  español y el mismo formato de resultados (`ok`, `estado`, `titulo`,
+  `archivo`, `archivos`, `playlist_*`...).
+- El paquete npm solo publica `index.js`, `index.d.ts`, `lib/`, `bin/` y los
+  recursos; los archivos de Python siguen disponibles para el paquete pip del
+  repositorio.
+- README, CHANGELOG y ejemplos actualizados para separar los requisitos de npm
+  (solo Node.js) y de pip (Python).
+
 ## [0.4.0] - 2026-11-09
 
 ### Añadido

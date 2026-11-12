@@ -4,14 +4,14 @@
  * Requisitos:
  *   npm install @whiskeysockets/baileys qrcode-terminal pino
  *   npm install https://github.com/natsu-dev01/ytpremiun_vip
- *   Python 3.10+ con `requests` y ffmpeg instalado y en el PATH
+ *   (Opcional) ffmpeg: npm install ffmpeg-static
  *
  * Uso en WhatsApp:
  *   !mp3 https://youtu.be/VIDEO
  *   !mp4 https://youtu.be/VIDEO
  *
- * El wrapper de ytpremiun-vip ejecuta Python por dentro. Baileys solo se
- * encarga de recibir el comando y enviar el archivo resultante.
+ * No hace falta Python: ytpremiun-vip usa su motor nativo en JavaScript.
+ * Baileys solo se encarga de recibir el comando y enviar el archivo resultante.
  */
 
 "use strict";
@@ -59,7 +59,7 @@ async function iniciar() {
     console.error("ytpremiun-vip no está listo:", estado.error);
     process.exit(1);
   }
-  console.log(`Python ${estado.python} | ytpremiun-vip ${estado.version}`);
+  console.log(`Node ${estado.node} | ytpremiun-vip ${estado.version}`);
   if (!estado.ffmpeg) {
     console.warn(
       "Aviso: no se encontró ffmpeg. MP3 y la unión de video+audio fallarán.",

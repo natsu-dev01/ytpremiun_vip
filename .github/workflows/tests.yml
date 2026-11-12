@@ -53,5 +53,5 @@ jobs:
         with:
           node-version: "20"
 
-      - name: Ejecutar los tests del wrapper
+      - name: Ejecutar los tests del paquete npm
         run: npm test

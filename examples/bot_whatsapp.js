@@ -4,14 +4,14 @@
  * Requisitos:
  *   npm install whatsapp-web.js qrcode-terminal
  *   npm install https://github.com/natsu-dev01/ytpremiun_vip
- *   Python 3.10+ con `requests` y ffmpeg instalado y en el PATH
+ *   (Opcional) ffmpeg: npm install ffmpeg-static
  *
  * Uso en WhatsApp:
  *   !mp3 https://youtu.be/VIDEO
  *   !mp4 https://youtu.be/VIDEO
  *
- * El wrapper de Node.js ejecuta Python por dentro y devuelve un objeto con
- * `archivo`, `titulo`, `autor`, etc. No hay que analizar la terminal.
+ * No hace falta Python: el paquete npm descarga con su motor nativo y
+ * devuelve un objeto con `archivo`, `titulo`, `autor`, etc.
  */
 
 "use strict";
@@ -32,7 +32,7 @@ async function main() {
     console.error("ytpremiun-vip no está listo:", estado.error);
     process.exit(1);
   }
-  console.log(`Python ${estado.python} | ytpremiun-vip ${estado.version}`);
+  console.log(`Node ${estado.node} | ytpremiun-vip ${estado.version}`);
   if (!estado.ffmpeg) {
     console.warn(
       "Aviso: no se encontró ffmpeg. MP3 y la unión de video+audio fallarán.",

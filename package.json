@@ -1,16 +1,18 @@
 {
   "name": "ytpremiun-vip",
-  "version": "0.4.0",
-  "description": "Wrapper de Node.js para ytpremiun-vip: descarga YouTube (video, audio y playlists) desde bots como Baileys o whatsapp-web.js. Requiere Python.",
+  "version": "0.5.0",
+  "description": "Descargador de YouTube para Node.js (video, audio y playlists) sin Python. Motor propio basado en InnerTube, ideal para bots como Baileys o whatsapp-web.js.",
   "main": "index.js",
   "types": "index.d.ts",
+  "bin": {
+    "ytpremiun-vip": "bin/ytpremiun-vip.js"
+  },
   "files": [
     "index.js",
     "index.d.ts",
-    "assets/ytpremiun-vip.jpeg",
-    "pyproject.toml",
-    "requirements.txt",
-    "ytpremiun_vip"
+    "lib",
+    "bin",
+    "assets/ytpremiun-vip.jpeg"
   ],
   "scripts": {
     "test": "node --test test/node.test.js"
@@ -24,7 +26,9 @@
     "bot",
     "audio",
     "video",
-    "playlist"
+    "playlist",
+    "nodejs",
+    "sin-python"
   ],
   "author": "natsu-dev01",
   "license": "MIT",
@@ -38,5 +42,8 @@
   "homepage": "https://github.com/natsu-dev01/ytpremiun_vip#readme",
   "engines": {
     "node": ">=18"
+  },
+  "optionalDependencies": {
+    "ffmpeg-static": "^5.3.0"
   }
 }

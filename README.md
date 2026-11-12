@@ -7,11 +7,17 @@
 [![Tests](https://github.com/natsu-dev01/ytpremiun_vip/actions/workflows/tests.yml/badge.svg)](https://github.com/natsu-dev01/ytpremiun_vip/actions/workflows/tests.yml)
 [![Licencia: MIT](https://img.shields.io/badge/licencia-MIT-yellow.svg)](LICENSE)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
+[![Node.js 18+](https://img.shields.io/badge/node.js-18%2B-green.svg)](https://nodejs.org/)
 
-Descargador de YouTube escrito desde cero en Python. **No usa yt-dlp** (ni
-pytube, ni youtube-dl): habla directamente con la API interna de YouTube
-(InnerTube), elige los formatos y descarga las URLs que el propio reproductor
-utiliza.
+Descargador de YouTube escrito desde cero. **No usa yt-dlp** (ni pytube, ni
+youtube-dl): habla directamente con la API interna de YouTube (InnerTube), elige
+los formatos y descarga las URLs que el propio reproductor utiliza.
+
+Está disponible de dos formas con el mismo comportamiento:
+
+- **Paquete npm (Node.js 18+):** motor completo en JavaScript. **No necesita
+  Python.**
+- **Paquete pip (Python 3.10+):** implementación original en Python.
 
 Permite:
 
@@ -24,8 +30,8 @@ Permite:
   de historial.
 - Integrarse como **librería** en bots y otros programas (`descargar_audio`,
   `descargar_video`, `descargar_playlist`).
-- Usarse desde **Node.js** con el wrapper npm incluido (`npm install
-  https://github.com/natsu-dev01/ytpremiun_vip`).
+- Usarse desde **Node.js** con el paquete npm incluido, sin instalar Python
+  (`npm install https://github.com/natsu-dev01/ytpremiun_vip`).
 
 > ⚠️ **Aviso legal:** descarga únicamente contenido propio, de dominio público
 > o para el que tengas permiso. Respeta los Términos de Servicio de YouTube y
@@ -35,6 +41,21 @@ Permite:
 
 ## Requisitos
 
+### Paquete npm (Node.js)
+
+| Requisito | Detalle |
+| --- | --- |
+| Node.js | 18 o superior |
+| ffmpeg | Opcional. `npm install` instala `ffmpeg-static` automáticamente. |
+
+El paquete npm **no necesita Python**: el motor (InnerTube, selección de
+formatos, descargas por rangos, playlists y subtítulos) está implementado en
+JavaScript dentro de `lib/`. FFmpeg solo hace falta para unir video+audio o
+convertir audio; si no está disponible, los formatos progresivos y las pistas
+M4A directas siguen funcionando.
+
+### Paquete pip (Python)
+
 | Requisito | Detalle |
 | --- | --- |
 | Python | 3.10 o superior |
@@ -43,11 +64,16 @@ Permite:
 
 ### FFmpeg
 
-El paquete incluye **imageio-ffmpeg**, que trae un binario de FFmpeg al
-instalarse con `pip`. No necesitas instalarlo ni configurar el `PATH`.
+En **npm**, `ffmpeg-static` se instala como dependencia opcional y el motor usa
+ese binario automáticamente. Si ya tienes FFmpeg instalado, se usa ese primero
+(variable `FFMPEG` o `PATH`). Puedes omitir la dependencia con
+`npm install --omit=optional` y definir `FFMPEG` o instalar ffmpeg en el
+sistema.
 
-Si ya tienes FFmpeg instalado, se usa ese primero (variable `FFMPEG` o `PATH`).
-También puedes instalarlo manualmente si lo prefieres:
+En **pip**, el paquete incluye **imageio-ffmpeg**, que trae un binario de FFmpeg
+al instalarse. No necesitas instalarlo ni configurar el `PATH`.
+
+Si prefieres instalarlo manualmente:
 
 - **Windows:** descárgalo de <https://ffmpeg.org/download.html>, descomprímelo
   y añade la carpeta `bin` al `PATH`. También se detectan automáticamente
@@ -64,6 +90,8 @@ export FFMPEG=/usr/local/bin/ffmpeg    # Linux/macOS
 ```
 
 ## Instalación
+
+### Paquete Python (pip)
 
 ```bash
 # 1. Clona el repositorio y entra en la carpeta
@@ -95,8 +123,8 @@ python -m ytpremiun_vip --help
 
 ### Instalación en un bot de Node.js (npm)
 
-El repositorio también incluye un wrapper oficial para Node.js. Instálalo
-desde GitHub en la carpeta de tu bot:
+El paquete npm incluye el **motor nativo en JavaScript** y el comando
+`ytpremiun-vip`. Instálalo desde GitHub en la carpeta de tu bot:
 
 ```bash
 npm install https://github.com/natsu-dev01/ytpremiun_vip
@@ -108,36 +136,47 @@ También puedes usar la forma `github:`:
 npm install github:natsu-dev01/ytpremiun_vip
 ```
 
-El wrapper lleva el código Python dentro del paquete npm y lo ejecuta con
-`python -m ytpremiun_vip`, así que **npm por sí solo no basta**. Necesitas:
-
-- Python 3.10 o superior en el `PATH` (o define `YTPREMIUN_PYTHON`).
-- El paquete `requests`: `python -m pip install requests`.
-- `imageio-ffmpeg`, que incluye FFmpeg: `python -m pip install imageio-ffmpeg`.
+**No necesitas Python, `pip` ni `requests`.** `npm install` instala además
+`ffmpeg-static` como dependencia opcional para unir video+audio y convertir
+audio. Si no quieres ese binario, usa `npm install --omit=optional` y define
+`FFMPEG` o instala ffmpeg en el sistema.
 
 Comprueba que todo está listo desde tu bot:
 
 ```js
 const { verificar } = require("ytpremiun-vip");
 
-verificar().then(console.log);
+console.log(await verificar());
+// { ok: true, motor: "node", node: "v22...", version: "0.5.0",
+//   ffmpeg: "C:\\...\\ffmpeg.exe", error: null }
 ```
 
-Si Python no está en el `PATH`, indícalo con una variable de entorno:
+También puedes usar el CLI sin instalarlo de forma global:
 
 ```bash
-set YTPREMIUN_PYTHON=C:\Python312\python.exe        # Windows cmd
-$env:YTPREMIUN_PYTHON="C:\Python312\python.exe"    # PowerShell
-export YTPREMIUN_PYTHON=/usr/bin/python3           # Linux/macOS
+npx ytpremiun-vip --help
+npx ytpremiun-vip -x --audio-format mp3 "https://youtu.be/jNQXAC9IVRw"
 ```
 
-> `npm install` instala el envoltorio de JavaScript. Python, `requests` e
-> `imageio-ffmpeg` se instalan aparte con `pip`; FFmpeg viene incluido en
-> `imageio-ffmpeg`.
+Si `ffmpeg` aparece como `null`, instala la dependencia opcional o indica la
+ruta manualmente:
+
+```bash
+npm install ffmpeg-static
+set FFMPEG=C:\ruta\a\ffmpeg.exe        # Windows cmd
+$env:FFMPEG="C:\ruta\a\ffmpeg.exe"    # PowerShell
+export FFMPEG=/usr/local/bin/ffmpeg    # Linux/macOS
+```
+
+> El paquete Python (`pip`) sigue siendo independiente y conserva sus propios
+> requisitos. Elegir npm no instala nada de Python.
 
 ---
 
 ## Uso rápido
+
+El comando `ytpremiun-vip` es el mismo en pip y en npm (`npx ytpremiun-vip`).
+Los ejemplos siguientes funcionan en ambos; el paquete npm no requiere Python.
 
 ```bash
 # Video MP4 con la mejor calidad (video + audio unidos)
@@ -277,6 +316,8 @@ forma drástica hay que evitar la recodificación.
 
 ## Uso como librería (bots)
 
+### Python
+
 El paquete se importa como `ytpremiun_vip` y está pensado para que un bot
 descargue y reciba la ruta del archivo sin depender de la terminal. Por
 defecto no imprime nada ni muestra barra de progreso.
@@ -373,8 +414,8 @@ Cada `Descarga` expone:
 las funciones de un solo elemento (`descargar_video`, `descargar_audio`)
 lanzan `YtPremiunVipError` si la descarga falla.
 
-Todas las funciones son síncronas. En un bot con `asyncio`, ejecútalas en un
-hilo para no bloquear el bucle:
+Las funciones de Python son síncronas. En un bot con `asyncio`, ejecútalas en
+un hilo para no bloquear el bucle:
 
 ```python
 import asyncio
@@ -387,34 +428,35 @@ resultado = await asyncio.to_thread(
 )
 ```
 
-> **Bots en Node.js (Baileys, `whatsapp-web.js` u otros):** el paquete
-> incluye un wrapper oficial que se instala con npm y ejecuta Python por
-> dentro. No necesitas `child_process` ni analizar la salida de la terminal:
->
-> ```js
-> const { descargarAudio, descargarVideo } = require("ytpremiun-vip");
->
-> const audio = await descargarAudio("https://youtu.be/jNQXAC9IVRw", {
->   carpeta: "media",
->   formatoAudio: "mp3",
->   calidadAudio: "192K",
-> });
-> console.log(audio.archivo); // ruta final del archivo
->
-> const video = await descargarVideo("https://youtu.be/jNQXAC9IVRw", {
->   carpeta: "media",
->   contenedor: "mp4",
-> });
-> console.log(video.archivo);
-> ```
->
-> El wrapper solo descarga y devuelve la ruta; el envío por WhatsApp depende
-> de tu librería. Tienes ejemplos completos para:
->
-> - [Baileys](examples/bot_baileys.js) (`@whiskeysockets/baileys`).
-> - [`whatsapp-web.js`](examples/bot_whatsapp.js).
+### Node.js
 
-### Funciones del wrapper Node.js
+El paquete npm expone las mismas funciones como promesas y **no ejecuta
+Python**. No necesitas `child_process` ni analizar la salida de la terminal:
+
+```js
+const { descargarAudio, descargarVideo } = require("ytpremiun-vip");
+
+const audio = await descargarAudio("https://youtu.be/jNQXAC9IVRw", {
+  carpeta: "media",
+  formatoAudio: "mp3",
+  calidadAudio: "192K",
+});
+console.log(audio.archivo); // ruta final del archivo
+
+const video = await descargarVideo("https://youtu.be/jNQXAC9IVRw", {
+  carpeta: "media",
+  contenedor: "mp4",
+});
+console.log(video.archivo);
+```
+
+El paquete solo descarga y devuelve la ruta; el envío por WhatsApp depende de
+tu librería. Tienes ejemplos completos para:
+
+- [Baileys](examples/bot_baileys.js) (`@whiskeysockets/baileys`).
+- [`whatsapp-web.js`](examples/bot_whatsapp.js).
+
+### Funciones del paquete npm (Node.js)
 
 | Función | Devuelve | Descripción |
 | --- | --- | --- |
@@ -424,14 +466,14 @@ resultado = await asyncio.to_thread(
 | `descargarPlaylist(url, opciones)` | `Promise<Resultado[]>` | Playlist completa o los elementos indicados. |
 | `obtenerInfo(url, opciones)` | `Promise<InfoVideo>` | Metadatos del video sin descargar. |
 | `listarFormatos(url, opciones)` | `Promise<string>` | Tabla de formatos disponibles. |
-| `verificar()` | `Promise<Verificacion>` | Comprueba Python, `requests`, el paquete y ffmpeg. |
+| `verificar()` | `Promise<Verificacion>` | Comprueba el motor Node y ffmpeg; no requiere Python. |
 
-Las opciones del wrapper usan nombres en español: `carpeta`, `formato`,
+Las opciones del paquete npm usan nombres en español: `carpeta`, `formato`,
 `formatoAudio`, `calidadAudio`, `contenedor`, `playlist`,
 `elementosPlaylist`, `subtitulos`, `cookies`, `proxy`, `conexiones`,
 `trabajos`, `timeout`, `reintentos`, entre otras. Cada resultado tiene `ok`,
 `estado`, `titulo`, `autor`, `duracion`, `archivo`, `archivos` y `error`,
-igual que la API de Python.
+exactamente igual que la API de Python.
 
 ---
 
@@ -611,17 +653,33 @@ ytpremiun-vip --write-subs --write-auto-subs --sub-langs all --sub-format vtt UR
 
 ```text
 .
-├── index.js           Wrapper de Node.js (npm)
-├── index.d.ts         Tipos TypeScript del wrapper
+├── index.js           API pública del paquete npm
+├── index.d.ts         Tipos TypeScript del paquete npm
 ├── package.json       Metadatos del paquete npm
+├── bin/
+│   └── ytpremiun-vip.js  CLI nativo de Node.js (sin Python)
+├── lib/               Motor nativo de Node.js (sin Python)
+│   ├── api.js           API de alto nivel
+│   ├── cli.js           Argumentos, opciones y resumen final
+│   ├── downloader.js    Cola, orquestación, archivo de historial
+│   ├── errors.js        Excepciones propias
+│   ├── formats.js       Selector de formatos y tabla -F
+│   ├── http.js          Reintentos, cookies, descargas reanudables
+│   ├── innertube.js     Cliente VISIONOS (+ respaldos) y parseo
+│   ├── media.js         Integración con ffmpeg
+│   ├── playlist.js      Lectura y paginación de playlists
+│   ├── progress.js      Barra de progreso
+│   ├── subtitles.js     Parseo y conversión de subtítulos
+│   ├── urls.js          Parseo de URLs de YouTube
+│   └── utils.js         Plantillas, saneado y utilidades
 ├── pyproject.toml     Metadatos del paquete pip
-├── requirements.txt   Dependencias de Python
+├── requirements.txt   Dependencias de Python (solo pip)
 ├── LICENSE            Licencia MIT
 ├── README.md          Documentación
 ├── examples/          Ejemplos (Baileys, whatsapp-web.js)
-├── test/              Tests del wrapper de Node.js
-├── tests/             Tests de Python
-└── ytpremiun_vip/
+├── test/              Tests del paquete npm
+├── tests/             Tests del paquete Python
+└── ytpremiun_vip/     Implementación del paquete pip (Python)
     ├── __init__.py      Versión y API pública
     ├── __main__.py      Punto de entrada (python -m ytpremiun_vip)
     ├── api.py           API de librería para bots (descargar_audio, etc.)
@@ -645,7 +703,16 @@ ytpremiun-vip --write-subs --write-auto-subs --sub-langs all --sub-format vtt UR
 
 El proyecto incluye tests unitarios que no necesitan red.
 
-Python:
+Paquete npm (Node.js, sin Python):
+
+```bash
+npm test
+```
+
+Cubren la API pública, `_buildArgs`, parseo de URLs y argumentos, selección de
+formatos, plantillas de nombres, subtítulos y el verificador.
+
+Paquete Python:
 
 ```bash
 python -m unittest discover -s tests -v
@@ -655,12 +722,6 @@ Cubren parseo de URLs, plantillas, selección de formatos, playlists,
 subtítulos, cliente HTTP, comandos de ffmpeg, flujo de descarga, API de
 librería y CLI. Hay un test de integración con ffmpeg que se omite
 automáticamente si no está instalado.
-
-Wrapper de Node.js:
-
-```bash
-npm test
-```
 
 ---
 
@@ -675,7 +736,7 @@ npm test
 - **Videos que solo ofrecen SABR:** algunos clientes web ya no entregan URLs
   directas. `VISIONOS` suele evitarlo, pero YouTube cambia sus APIs con
   frecuencia; si un video falla, prueba a actualizar los `clientVersion` de
-  `innertube.py`.
+  `lib/innertube.js` (npm) o `ytpremiun_vip/innertube.py` (pip).
 - **Clientes móviles antiguos:** `ANDROID`, `IOS` y `ANDROID_VR` pueden entregar
   enlaces que solo sirven el primer MiB y luego responden `HTTP 403`. Por eso
   son solo respaldo: el cliente principal es `VISIONOS`, que sirve el archivo
@@ -687,17 +748,17 @@ npm test
   descarga.
 - **Subtítulos:** dependen de que el video los tenga disponibles; los
   automáticos pueden tener peor calidad.
-- **Unión de pistas:** FFmpeg se instala automáticamente con
-  `imageio-ffmpeg`. Si aun así falta, no se pueden unir video+audio ni
-  convertir audio (los formatos progresivos y las pistas M4A directas sí
-  funcionan).
+- **Unión de pistas:** FFmpeg se instala como dependencia opcional en npm
+  (`ffmpeg-static`) y con `imageio-ffmpeg` en pip. Si aun así falta, no se
+  pueden unir video+audio ni convertir audio (los formatos progresivos y las
+  pistas M4A directas sí funcionan).
 
 ## Problemas frecuentes
 
 | Problema | Solución |
 | --- | --- |
-| `ffmpeg no está instalado o no está en el PATH` | Reinstala con `pip install -e .` (incluye `imageio-ffmpeg`) o define la variable `FFMPEG`. |
-| `HTTP 403` al descargar | La URL caducó o el cliente quedó bloqueado. Vuelve a ejecutar el comando; si persiste, actualiza los `clientVersion` de `innertube.py` o usa `--cookies cookies.txt`. |
+| `ffmpeg no está instalado o no se encuentra en el PATH` | En npm ejecuta `npm install ffmpeg-static`; en pip reinstala con `pip install -e .` (incluye `imageio-ffmpeg`). También puedes definir `FFMPEG`. |
+| `HTTP 403` al descargar | La URL caducó o el cliente quedó bloqueado. Vuelve a ejecutar el comando; si persiste, actualiza los `clientVersion` de `lib/innertube.js` o `innertube.py`, o usa `--cookies cookies.txt`. |
 | `YouTube pidió iniciar sesión (o detectó un bot)` | Exporta cookies del navegador y usa `--cookies cookies.txt`. |
 | `No se encontró un formato que coincida` | Ejecuta `-F` y elige un itag válido. |
 | El video se guarda como `.mkv` | El contenedor MP4 no admitía los códecs; usa `--merge-output-format mkv` para evitar el aviso. |
@@ -710,7 +771,7 @@ npm test
 Las contribuciones son bienvenidas. Antes de enviar cambios:
 
 1. Abre una *issue* para cambios grandes y acuerda el enfoque.
-2. Ejecuta los tests: `python -m unittest discover -s tests -v`.
+2. Ejecuta los tests: `npm test` y `python -m unittest discover -s tests -v`.
 3. Añade tests para el comportamiento nuevo o corregido.
 4. Mantén el código y la documentación en español.
 
